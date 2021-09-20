@@ -27,7 +27,7 @@ namespace ClassicVolumeMixer
             notifyIcon.Icon = Icon.ExtractAssociatedIcon(mixerPath);
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
-            notifyIcon.Click += new System.EventHandler(notifyIcon_Click);
+            notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
             notifyIcon.ContextMenu = contextMenu;
 
             contextMenu.MenuItems.AddRange(new
@@ -38,7 +38,7 @@ namespace ClassicVolumeMixer
             
             openClassic.Index = 0;
             openClassic.Text = "Open Classic Volume Mixer";
-            openClassic.Click += new System.EventHandler(notifyIcon_Click);
+            openClassic.Click += new System.EventHandler(openClassic_Click);
 
             exit.Index = 1;
             exit.Text = "Exit";
@@ -46,18 +46,30 @@ namespace ClassicVolumeMixer
 
         }
 
-        private void notifyIcon_Click(object sender, EventArgs e)
+        private void notifyIcon_Click(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                openClassicMixer();
+            }
+        }
+
+        private void openClassic_Click(object sender, EventArgs e)
+        {
+            openClassicMixer();
+        }
+        private void exit_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+
+        private void openClassicMixer()
         {
             ProcessStartInfo proc = new ProcessStartInfo();
             proc.UseShellExecute = true;
             proc.FileName = mixerPath;
             Process.Start(proc);
         }
-
-        private void exit_Click(object sender, EventArgs e)
-        {
-            this.Close();
-        }
-
     }
 }
