@@ -5,6 +5,8 @@ I really don't like this due to it's HUGE size in comparison. Luckily the old ex
 
 Thats what this is, this repo contains a super simple application which only purpose is to add a new icon in the system tray that can be used to launch the old mixer.
 
+I would recommend putting this in your startup folder so you don't have to start it every time you reboot your computer.
+
 -----
 
 ![Screenshot](size.png)
