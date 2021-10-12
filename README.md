@@ -7,6 +7,11 @@ Thats what this is, this repo contains a super simple application which only pur
 
 I would recommend putting this in your startup folder so you don't have to start it every time you reboot your computer.
 
+If you get smartscreen error (blue box popup) this is because the file has not been signed and is still to new. You can click on "more info" and then "run anyway" to run it, this is only needed once. 
+
+You can find a VirusTotal of the published v1 here
+https://www.virustotal.com/gui/file/7828971746d0810c3a94f7c86c122d2af7e7f278cc20df3c693ec0e53484fed8
+
 -----
 
 ![Screenshot](size.png)
