@@ -40,6 +40,12 @@
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
 
+            //the process needs to be started and stopped at startup so that the check in notifyIcon_Click works.
+            this.process = new System.Diagnostics.Process();
+            this.process.StartInfo.FileName = mixerPath;
+            this.process.StartInfo.UseShellExecute = false;
+            this.process.Start();
+            this.process.Kill();
         }
 
         #endregion
