@@ -102,9 +102,9 @@ namespace ClassicVolumeMixer
                 Rect corners = new Rect();
                 if (GetWindowRect(handle, ref corners)) //get window dimensions
                 {
-                    Rectangle area = Screen.PrimaryScreen.WorkingArea;
+                    Rectangle screenArea = Screen.PrimaryScreen.WorkingArea;
                     //set window position to bottom right of the PrimaryScreen
-                    SetWindowPos(handle, 0, area.Width - (corners.Right - corners.Left), Screen.PrimaryScreen.WorkingArea.Height - (corners.Bottom - corners.Top), 0, 0, 0x0041);
+                    SetWindowPos(handle, 0, screenArea.Width - (corners.Right - corners.Left), screenArea.Height - (corners.Bottom - corners.Top), 0, 0, 0x0041);
                 }
             }
         }
