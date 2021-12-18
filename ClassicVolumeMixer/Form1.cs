@@ -9,9 +9,11 @@ namespace ClassicVolumeMixer
     public partial class Form1 : Form
     {
         private String mixerPath = "C:\\windows\\System32\\sndvol.exe";
+        private String soundControlPath = "C:\\windows\\System32\\mmsys.cpl";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
         private MenuItem openClassic = new System.Windows.Forms.MenuItem();
+        private MenuItem sounds = new System.Windows.Forms.MenuItem();
         private MenuItem exit = new System.Windows.Forms.MenuItem();
         private Process process;
         IntPtr handle; // the handle of the mixer window
@@ -20,6 +22,15 @@ namespace ClassicVolumeMixer
         public Form1()
         {
             InitializeComponent();
+            Process[] processlist = Process.GetProcesses();
+
+            foreach (Process process in processlist)
+            {
+                if (!String.IsNullOrEmpty(process.MainWindowTitle))
+                {
+                    Console.WriteLine("Process: {0} ID: {1} Window title: {2}", process.ProcessName, process.Id, process.MainWindowTitle);
+                }
+            }
         }
 
 
@@ -37,6 +48,7 @@ namespace ClassicVolumeMixer
             contextMenu.MenuItems.AddRange(new
                 System.Windows.Forms.MenuItem[] {
                      openClassic,
+                     sounds,
                      exit
             });
 
@@ -44,10 +56,22 @@ namespace ClassicVolumeMixer
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
 
-            exit.Index = 1;
+            sounds.Index = 1;
+            sounds.Text = "Sounds";
+            sounds.Click += new System.EventHandler(openSoundControl);
+
+            exit.Index = 2;
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
+        }
+
+        private void openSoundControl(object sender, EventArgs e)
+        {
+            Process soundProcess = new Process();
+            soundProcess.StartInfo.FileName = soundControlPath;
+            soundProcess.StartInfo.UseShellExecute = true;
+            soundProcess.Start();
         }
 
         private void notifyIcon_Click(object sender, MouseEventArgs e)
