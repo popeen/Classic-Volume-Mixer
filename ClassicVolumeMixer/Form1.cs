@@ -14,11 +14,13 @@ namespace ClassicVolumeMixer
         private ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
         private MenuItem openClassic = new System.Windows.Forms.MenuItem();
         private MenuItem exit = new System.Windows.Forms.MenuItem();
+        private Process process;
 
         public Form1()
         {
             InitializeComponent();
         }
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -51,7 +53,14 @@ namespace ClassicVolumeMixer
         {
             if (e.Button == MouseButtons.Left)
             {
-                openClassicMixer();
+                //check if the mixer is currently open. 
+                if (this.process.HasExited)
+                {
+                    openClassicMixer();
+                }
+                else { //if the process is open close it.
+                    this.process.Kill(); 
+                }
             }
         }
 
@@ -88,12 +97,8 @@ namespace ClassicVolumeMixer
 
         private void openClassicMixer()
         {
-            Process proc = new Process();
-            proc.StartInfo.FileName = mixerPath;
-            proc.StartInfo.UseShellExecute = false;
-            proc.Start();
-            proc.WaitForInputIdle();
-
+            this.process.Start();
+            this.process.WaitForInputIdle();
             Process[] processes = Process.GetProcessesByName("SndVol");
             foreach (Process process in processes)
             {
