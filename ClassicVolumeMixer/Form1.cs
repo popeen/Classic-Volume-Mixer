@@ -14,6 +14,8 @@ namespace ClassicVolumeMixer
         private MenuItem openClassic = new System.Windows.Forms.MenuItem();
         private MenuItem exit = new System.Windows.Forms.MenuItem();
         private Process process;
+        IntPtr handle; // the handle of the mixer window
+        bool isVisible;
 
         public Form1()
         {
@@ -37,7 +39,7 @@ namespace ClassicVolumeMixer
                      openClassic,
                      exit
             });
-            
+
             openClassic.Index = 0;
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
@@ -56,20 +58,41 @@ namespace ClassicVolumeMixer
                 if (this.process.HasExited)
                 {
                     openClassicMixer();
+                    isVisible = true;
                 }
-                else { //if the process is open close it.
-                    this.process.Kill(); 
+                else
+                { 
+                    if (isVisible)
+                    {
+                        ShowWindowAsync(handle, 0);
+                    }
+                    else {
+                        ShowWindowAsync(handle, 1);
+                        SetForegroundWindow(handle);
+                    }
+                    isVisible = !isVisible;
                 }
             }
         }
 
         private void openClassic_Click(object sender, EventArgs e)
         {
-            openClassicMixer();
+            if (this.process.HasExited)
+            {
+                openClassicMixer();
+            }
+            else {
+                ShowWindowAsync(handle, 1);
+                SetForegroundWindow(handle);
+            }
+            isVisible = true;
         }
         private void exit_Click(object sender, EventArgs e)
         {
-            this.process.Kill();
+            if (!this.process.HasExited)
+            {
+                this.process.Kill();
+            }
             this.Close();
         }
 
@@ -86,6 +109,13 @@ namespace ClassicVolumeMixer
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GetWindowRect(IntPtr hwnd, ref Rect rectangle);
 
+        [DllImport("user32.dll")]
+        static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+
+        [DllImport("user32.dll")]
+        static extern bool SetForegroundWindow(IntPtr hWnd);
+
+
         [StructLayout(LayoutKind.Sequential)]
         public struct Rect
         {
@@ -97,13 +127,15 @@ namespace ClassicVolumeMixer
 
         private void openClassicMixer()
         {
+            this.process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             this.process.Start();
             this.process.WaitForInputIdle();
+
             Process[] processes = Process.GetProcessesByName("SndVol");
             foreach (Process process in processes)
             {
                 while (process.MainWindowHandle == IntPtr.Zero) { } //busy waiting until the window is open
-                IntPtr handle = process.MainWindowHandle;
+                this.handle = process.MainWindowHandle;
                 Rect corners = new Rect();
                 if (GetWindowRect(handle, ref corners)) //get window dimensions
                 {
