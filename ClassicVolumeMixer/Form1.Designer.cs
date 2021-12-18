@@ -39,6 +39,8 @@
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
+            this.handle = System.IntPtr.Zero;
+            this.isVisible = false;
 
             //the process needs to be started and stopped at startup so that the check in notifyIcon_Click works.
             this.process = new System.Diagnostics.Process();
@@ -46,6 +48,7 @@
             this.process.StartInfo.UseShellExecute = false;
             this.process.Start();
             this.process.Kill();
+
         }
 
         #endregion
