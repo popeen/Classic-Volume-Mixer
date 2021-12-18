@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace ClassicVolumeMixer
@@ -63,13 +64,49 @@ namespace ClassicVolumeMixer
             this.Close();
         }
 
+        [DllImport("user32.dll")]
+        public static extern void SetWindowText(int hWnd, String text);
+
+        [DllImport("user32.dll", EntryPoint = "SetWindowPos")]
+        public static extern IntPtr SetWindowPos(IntPtr hWnd, int hWndInsertAfter, int x, int Y, int cx, int cy, int wFlags);
+
+        [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true)]
+        static extern IntPtr FindWindowByCaption(IntPtr ZeroOnly, string lpWindowName);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool GetWindowRect(IntPtr hwnd, ref Rect rectangle);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Rect
+        {
+            public int Left;        // x position of upper-left corner
+            public int Top;         // y position of upper-left corner
+            public int Right;       // x position of lower-right corner
+            public int Bottom;      // y position of lower-right corner
+        }
 
         private void openClassicMixer()
         {
-            ProcessStartInfo proc = new ProcessStartInfo();
-            proc.UseShellExecute = true;
-            proc.FileName = mixerPath;
-            Process.Start(proc);
+            Process proc = new Process();
+            proc.StartInfo.FileName = mixerPath;
+            proc.StartInfo.UseShellExecute = false;
+            proc.Start();
+            proc.WaitForInputIdle();
+
+            Process[] processes = Process.GetProcessesByName("SndVol");
+            foreach (Process process in processes)
+            {
+                while (process.MainWindowHandle == IntPtr.Zero) { } //busy waiting until the window is open
+                IntPtr handle = process.MainWindowHandle;
+                Rect corners = new Rect();
+                if (GetWindowRect(handle, ref corners)) //get window dimensions
+                {
+                    Rectangle screenArea = Screen.PrimaryScreen.WorkingArea;
+                    //set window position to bottom right of the PrimaryScreen
+                    SetWindowPos(handle, 0, screenArea.Width - (corners.Right - corners.Left), screenArea.Height - (corners.Bottom - corners.Top), 0, 0, 0x0041);
+                }
+            }
         }
     }
 }
