@@ -9,7 +9,6 @@ namespace ClassicVolumeMixer
     public partial class Form1 : Form
     {
         private String mixerPath = "C:\\windows\\System32\\sndvol.exe";
-
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
         private MenuItem openClassic = new System.Windows.Forms.MenuItem();
@@ -70,6 +69,7 @@ namespace ClassicVolumeMixer
         }
         private void exit_Click(object sender, EventArgs e)
         {
+            this.process.Kill();
             this.Close();
         }
 
