@@ -8,8 +8,10 @@ namespace ClassicVolumeMixer
 {
     public partial class Form1 : Form
     {
-        private String mixerPath = "C:\\windows\\System32\\sndvol.exe";
-        private String soundControlPath = "C:\\windows\\System32\\mmsys.cpl";
+
+        private static String drive = System.Environment.GetEnvironmentVariable("SystemDrive");
+        private String mixerPath = drive + "\\Windows\\System32\\sndvol.exe";
+        private String soundControlPath = drive + "\\Windows\\System32\\mmsys.cpl";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
         private MenuItem openClassic = new System.Windows.Forms.MenuItem();
@@ -57,7 +59,7 @@ namespace ClassicVolumeMixer
             openClassic.Click += new System.EventHandler(openClassic_Click);
 
             sounds.Index = 1;
-            sounds.Text = "Sounds";
+            sounds.Text = "Sound";
             sounds.Click += new System.EventHandler(openSoundControl);
 
             exit.Index = 2;
