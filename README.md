@@ -5,7 +5,7 @@ I really don't like this due to it's HUGE size in comparison. Luckily the old ex
 
 Thats what this is, this repo contains a super simple application which only purpose is to add a new icon in the system tray that can be used to launch the old mixer.
 
-I would recommend putting this in your startup folder so you don't have to start it every time you reboot your computer.
+I would recommend putting this in your startup folder so you don't have to start it every time you reboot your computer. Alternatively you can use the setup.exe that will install it to program files and then add it to your startup applications.
 
 If you get smartscreen error (blue box popup) this is because the file has not been signed and is still to new. You can click on "more info" and then "run anyway" to run it, this is only needed once. 
 
