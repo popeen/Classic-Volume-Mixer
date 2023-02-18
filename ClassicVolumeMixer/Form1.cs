@@ -21,6 +21,7 @@ namespace ClassicVolumeMixer
         private ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
         private MenuItem openClassic = new System.Windows.Forms.MenuItem();
         private MenuItem sounds = new System.Windows.Forms.MenuItem();
+        private MenuItem closeClick = new System.Windows.Forms.MenuItem();
         private MenuItem exit = new System.Windows.Forms.MenuItem();
         private Process process;
         private Timer timer = new Timer();
@@ -59,6 +60,7 @@ namespace ClassicVolumeMixer
                 System.Windows.Forms.MenuItem[] {
                      openClassic,
                      sounds,
+                     closeClick,
                      exit
             });
 
@@ -70,13 +72,22 @@ namespace ClassicVolumeMixer
             sounds.Text = "Sound";
             sounds.Click += new System.EventHandler(openSoundControl);
 
-            exit.Index = 2;
+            closeClick.Index = 2;
+            closeClick.Text = "Close by clicking outside the window";
+            closeClick.Checked = true;
+            closeClick.Click += new System.EventHandler(closeClickToggle);
+
+            exit.Index = 3;
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
 
+        }
+        private void closeClickToggle(object sender, EventArgs e)
+        {
+            closeClick.Checked = !closeClick.Checked;
         }
 
         private void openSoundControl(object sender, EventArgs e)
@@ -147,7 +158,7 @@ namespace ClassicVolumeMixer
 
         private void timer_Tick(object sender, EventArgs e)
         {
-            if ((GetForegroundWindow() != handle) && (stopwatch.ElapsedMilliseconds > 1000))
+            if ((GetForegroundWindow() != handle) && (stopwatch.ElapsedMilliseconds > 1000) && closeClick.Checked)
             {
                 ShowWindowAsync(handle, 0);
                 isVisible = false;
