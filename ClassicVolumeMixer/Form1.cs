@@ -1,14 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using static ClassicVolumeMixer.Form1;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+using System.Windows.Input;
 
 namespace ClassicVolumeMixer
 {
     public partial class Form1 : Form
     {
-
         // it's better to use the Windows Directory directly, because it can change and no be "Windows".
         // private static String drive = System.Environment.GetEnvironmentVariable("SystemDrive");
         private static String WinDir = System.Environment.GetEnvironmentVariable("SystemRoot");  //location of windows installation
@@ -20,6 +23,8 @@ namespace ClassicVolumeMixer
         private MenuItem sounds = new System.Windows.Forms.MenuItem();
         private MenuItem exit = new System.Windows.Forms.MenuItem();
         private Process process;
+        private Timer timer = new Timer();
+        Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
 
@@ -47,6 +52,7 @@ namespace ClassicVolumeMixer
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
+            notifyIcon.MouseMove += new MouseEventHandler(notifyIcon_MouseMove);
             notifyIcon.ContextMenu = contextMenu;
 
             contextMenu.MenuItems.AddRange(new
@@ -68,6 +74,9 @@ namespace ClassicVolumeMixer
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
+            timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
+            timer.Tick += new EventHandler(timer_Tick);
+
         }
 
         private void openSoundControl(object sender, EventArgs e)
@@ -76,6 +85,11 @@ namespace ClassicVolumeMixer
             soundProcess.StartInfo.FileName = soundControlPath;
             soundProcess.StartInfo.UseShellExecute = true;
             soundProcess.Start();
+        }
+
+        private void notifyIcon_MouseMove(object sender, MouseEventArgs e)
+        {
+            stopwatch.Restart();
         }
 
         private void notifyIcon_Click(object sender, MouseEventArgs e)
@@ -87,16 +101,21 @@ namespace ClassicVolumeMixer
                 {
                     openClassicMixer();
                     isVisible = true;
+                    timer.Start();
                 }
                 else
-                { 
+                {
+                    Console.WriteLine(stopwatch.ElapsedMilliseconds > 1000);
                     if (isVisible)
                     {
                         ShowWindowAsync(handle, 0);
+                        timer.Stop();
                     }
-                    else {
+                    else
+                    {
                         ShowWindowAsync(handle, 1);
                         SetForegroundWindow(handle);
+                        timer.Start();
                     }
                     isVisible = !isVisible;
                 }
@@ -109,11 +128,13 @@ namespace ClassicVolumeMixer
             {
                 openClassicMixer();
             }
-            else {
+            else
+            {
                 ShowWindowAsync(handle, 1);
                 SetForegroundWindow(handle);
             }
             isVisible = true;
+            timer.Start();
         }
         private void exit_Click(object sender, EventArgs e)
         {
@@ -122,6 +143,16 @@ namespace ClassicVolumeMixer
                 this.process.Kill();
             }
             this.Close();
+        }
+
+        private void timer_Tick(object sender, EventArgs e)
+        {
+            if ((GetForegroundWindow() != handle) && (stopwatch.ElapsedMilliseconds > 1000))
+            {
+                ShowWindowAsync(handle, 0);
+                isVisible = false;
+                timer.Stop();
+            }
         }
 
         [DllImport("user32.dll")]
@@ -143,6 +174,8 @@ namespace ClassicVolumeMixer
         [DllImport("user32.dll")]
         static extern bool SetForegroundWindow(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
 
         [StructLayout(LayoutKind.Sequential)]
         public struct Rect
