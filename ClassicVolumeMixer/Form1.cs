@@ -18,11 +18,11 @@ namespace ClassicVolumeMixer
         private String mixerPath = WinDir + "\\System32\\sndvol.exe";
         private String soundControlPath = WinDir + "\\System32\\mmsys.cpl";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
-        private ContextMenu contextMenu = new System.Windows.Forms.ContextMenu();
-        private MenuItem openClassic = new System.Windows.Forms.MenuItem();
-        private MenuItem sounds = new System.Windows.Forms.MenuItem();
-        private MenuItem closeClick = new System.Windows.Forms.MenuItem();
-        private MenuItem exit = new System.Windows.Forms.MenuItem();
+        private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
+        private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem sounds = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem closeClick = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -43,7 +43,6 @@ namespace ClassicVolumeMixer
             }
         }
 
-
         private void Form1_Load(object sender, EventArgs e)
         {
             this.ShowInTaskbar = false;
@@ -54,30 +53,29 @@ namespace ClassicVolumeMixer
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
             notifyIcon.MouseMove += new MouseEventHandler(notifyIcon_MouseMove);
-            notifyIcon.ContextMenu = contextMenu;
+            notifyIcon.ContextMenuStrip = contextMenu;
 
-            contextMenu.MenuItems.AddRange(new
-                System.Windows.Forms.MenuItem[] {
+            contextMenu.Opening += ContextMenu_Opening;
+            contextMenu.Closing += ContextMenu_Closing;
+
+            contextMenu.Items.AddRange(new
+                System.Windows.Forms.ToolStripMenuItem[] {
                      openClassic,
                      sounds,
                      closeClick,
                      exit
             });
 
-            openClassic.Index = 0;
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
 
-            sounds.Index = 1;
             sounds.Text = "Sound";
             sounds.Click += new System.EventHandler(openSoundControl);
 
-            closeClick.Index = 2;
             closeClick.Text = "Close by clicking outside the window";
             closeClick.Checked = true;
             closeClick.Click += new System.EventHandler(closeClickToggle);
 
-            exit.Index = 3;
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
@@ -85,9 +83,24 @@ namespace ClassicVolumeMixer
             timer.Tick += new EventHandler(timer_Tick);
 
         }
+
+        private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
+        {
+            if (isVisible)
+            {
+                timer.Start();
+            }
+        }
+
+        private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            timer.Stop();
+        }
+
         private void closeClickToggle(object sender, EventArgs e)
         {
             closeClick.Checked = !closeClick.Checked;
+            SetForegroundWindow(handle);
         }
 
         private void openSoundControl(object sender, EventArgs e)
