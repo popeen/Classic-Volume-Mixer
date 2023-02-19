@@ -129,7 +129,6 @@ namespace ClassicVolumeMixer
                 }
                 else
                 {
-                    Console.WriteLine(stopwatch.ElapsedMilliseconds > 1000);
                     if (isVisible)
                     {
                         ShowWindowAsync(handle, 0);
