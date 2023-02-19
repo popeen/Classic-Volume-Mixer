@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Classic Volume Mixer"
-#define MyAppVersion "2.1"
+#define MyAppVersion "2.2"
 #define MyAppPublisher "PopeenCom"
 #define MyAppURL "https://popeen.com"
 #define MyAppExeName "ClassicVolumeMixer.exe"
