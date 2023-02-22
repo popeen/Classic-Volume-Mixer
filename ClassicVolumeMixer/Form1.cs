@@ -4,9 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using static ClassicVolumeMixer.Form1;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
-using System.Windows.Input;
+using System.Collections;
 
 namespace ClassicVolumeMixer
 {
@@ -22,9 +20,11 @@ namespace ClassicVolumeMixer
         private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem sounds = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem closeClick = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem adjustWidth = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
+        private IntPtr taskbar = IntPtr.Zero;
         Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
@@ -63,6 +63,7 @@ namespace ClassicVolumeMixer
                      openClassic,
                      sounds,
                      closeClick,
+                     adjustWidth,
                      exit
             });
 
@@ -76,12 +77,23 @@ namespace ClassicVolumeMixer
             closeClick.Checked = true;
             closeClick.Click += new System.EventHandler(closeClickToggle);
 
+            adjustWidth.Text = "dynamicly adjust window width";
+            adjustWidth.Checked = true;
+            adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
+
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
+
+            taskbar = FindWindow("Shell_TrayWnd", null);
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
 
+        }
+
+        private void adjustWidthToggle(object sender, EventArgs e)
+        {
+            adjustWidth.Checked = !adjustWidth.Checked;
         }
 
         private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
@@ -138,6 +150,7 @@ namespace ClassicVolumeMixer
                     {
                         ShowWindowAsync(handle, 1);
                         SetForegroundWindow(handle);
+                        setMixerPositionAndSize();
                         timer.Start();
                     }
                     isVisible = !isVisible;
@@ -170,22 +183,14 @@ namespace ClassicVolumeMixer
 
         private void timer_Tick(object sender, EventArgs e)
         {
-            if ((GetForegroundWindow() != handle) && (stopwatch.ElapsedMilliseconds > 1000) && closeClick.Checked)
+            IntPtr foregroundWindow = GetForegroundWindow();
+            if ((foregroundWindow != handle) && closeClick.Checked && ((stopwatch.ElapsedMilliseconds > 1000) || foregroundWindow != taskbar))
             {
                 ShowWindowAsync(handle, 0);
                 isVisible = false;
                 timer.Stop();
             }
         }
-
-        [DllImport("user32.dll")]
-        public static extern void SetWindowText(int hWnd, String text);
-
-        [DllImport("user32.dll", EntryPoint = "SetWindowPos")]
-        public static extern IntPtr SetWindowPos(IntPtr hWnd, int hWndInsertAfter, int x, int Y, int cx, int cy, int wFlags);
-
-        [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true)]
-        static extern IntPtr FindWindowByCaption(IntPtr ZeroOnly, string lpWindowName);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -200,6 +205,18 @@ namespace ClassicVolumeMixer
         [DllImport("user32.dll")]
         static extern IntPtr GetForegroundWindow();
 
+        [DllImport("user32")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EnumChildWindows(IntPtr window, EnumedWindow callback, ArrayList lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+
+
+
         [StructLayout(LayoutKind.Sequential)]
         public struct Rect
         {
@@ -208,6 +225,8 @@ namespace ClassicVolumeMixer
             public int Right;       // x position of lower-right corner
             public int Bottom;      // y position of lower-right corner
         }
+
+        private delegate bool EnumedWindow(IntPtr handleWindow, ArrayList handles);
 
         private void openClassicMixer()
         {
@@ -220,14 +239,33 @@ namespace ClassicVolumeMixer
             {
                 while (process.MainWindowHandle == IntPtr.Zero) { } //busy waiting until the window is open
                 this.handle = process.MainWindowHandle;
-                Rect corners = new Rect();
-                if (GetWindowRect(handle, ref corners)) //get window dimensions
-                {
-                    Rectangle screenArea = Screen.PrimaryScreen.WorkingArea;
-                    //set window position to bottom right of the PrimaryScreen
-                    SetWindowPos(handle, 0, screenArea.Width - (corners.Right - corners.Left), screenArea.Height - (corners.Bottom - corners.Top), 0, 0, 0x0041);
-                }
+                setMixerPositionAndSize();
             }
+        }
+
+        //sets the mixers position to bottom right of the PrimaryScreen and adjusts the window width depending on the number of active sound application
+        private void setMixerPositionAndSize()
+        {
+            Rectangle screenArea = Screen.PrimaryScreen.WorkingArea;
+            Rect corners = new Rect();
+            GetWindowRect(handle, ref corners);
+
+            ArrayList windowHandles = new ArrayList();
+            EnumedWindow callBackPtr = GetWindowHandle;
+            EnumChildWindows(handle, callBackPtr, windowHandles);
+            int appCount = 3;
+            if (adjustWidth.Checked)
+            {
+                appCount = (windowHandles.Count - 12) / 7;
+            }
+            GetWindowRect(handle, ref corners);
+            MoveWindow(this.handle, screenArea.Width - (160 + 110 * appCount), screenArea.Height - (corners.Bottom - corners.Top), 160 + 110 * appCount, 350, true);
+        }
+
+        private static bool GetWindowHandle(IntPtr windowHandle, ArrayList windowHandles)
+        {
+            windowHandles.Add(windowHandle);
+            return true;
         }
     }
 }
