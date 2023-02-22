@@ -221,8 +221,6 @@ namespace ClassicVolumeMixer
 
         private delegate bool EnumedWindow(IntPtr handleWindow, ArrayList handles);
 
-        private IntPtr scrollHandle;
-
         private void openClassicMixer()
         {
             this.process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
