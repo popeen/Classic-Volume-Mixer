@@ -24,6 +24,7 @@ namespace ClassicVolumeMixer
         private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
+        private IntPtr taskbar = IntPtr.Zero;
         Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
@@ -82,6 +83,8 @@ namespace ClassicVolumeMixer
 
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
+
+            taskbar = FindWindow("Shell_TrayWnd", null);
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
@@ -180,7 +183,8 @@ namespace ClassicVolumeMixer
 
         private void timer_Tick(object sender, EventArgs e)
         {
-            if ((GetForegroundWindow() != handle) && (stopwatch.ElapsedMilliseconds > 1000) && closeClick.Checked)
+            IntPtr foregroundWindow = GetForegroundWindow();
+            if ((foregroundWindow != handle) && closeClick.Checked && ((stopwatch.ElapsedMilliseconds > 1000) || foregroundWindow != taskbar))
             {
                 ShowWindowAsync(handle, 0);
                 isVisible = false;
@@ -207,6 +211,9 @@ namespace ClassicVolumeMixer
 
         [DllImport("user32.dll", SetLastError = true)]
         internal static extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
 
 
