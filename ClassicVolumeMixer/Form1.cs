@@ -77,7 +77,7 @@ namespace ClassicVolumeMixer
             closeClick.Checked = true;
             closeClick.Click += new System.EventHandler(closeClickToggle);
 
-            adjustWidth.Text = "dynamicly adjust window width";
+            adjustWidth.Text = "Dynamically adjust window width";
             adjustWidth.Checked = true;
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
 
