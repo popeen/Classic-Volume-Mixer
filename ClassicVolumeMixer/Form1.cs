@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections;
+using System.Management;
+using System.Linq;
 
 namespace ClassicVolumeMixer
 {
@@ -15,6 +17,7 @@ namespace ClassicVolumeMixer
         private static String WinDir = System.Environment.GetEnvironmentVariable("SystemRoot");  //location of windows installation
         private String mixerPath = WinDir + "\\System32\\sndvol.exe";
         private String soundControlPath = WinDir + "\\System32\\mmsys.cpl";
+        private bool win11 = new ManagementObjectSearcher("SELECT Caption FROM Win32_OperatingSystem").Get().Cast<ManagementObject>().FirstOrDefault().GetPropertyValue("Caption").ToString().Contains("Windows 11");
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
         private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
@@ -143,7 +146,7 @@ namespace ClassicVolumeMixer
                 {
                     if (isVisible)
                     {
-                        ShowWindowAsync(handle, 0);
+                        closeMixer();
                         timer.Stop();
                     }
                     else
@@ -152,8 +155,8 @@ namespace ClassicVolumeMixer
                         SetForegroundWindow(handle);
                         setMixerPositionAndSize();
                         timer.Start();
+                        isVisible = true;
                     }
-                    isVisible = !isVisible;
                 }
             }
         }
@@ -186,9 +189,24 @@ namespace ClassicVolumeMixer
             IntPtr foregroundWindow = GetForegroundWindow();
             if ((foregroundWindow != handle) && closeClick.Checked && ((stopwatch.ElapsedMilliseconds > 1000) || foregroundWindow != taskbar))
             {
+                closeMixer();
+                timer.Stop();
+            }
+        }
+
+        private void closeMixer()
+        {
+            if (win11)
+            {
                 ShowWindowAsync(handle, 0);
                 isVisible = false;
-                timer.Stop();
+            }
+            else
+            {
+                if (!this.process.HasExited)
+                {
+                    this.process.Kill();
+                }
             }
         }
 
