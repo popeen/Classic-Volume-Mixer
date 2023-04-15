@@ -17,13 +17,13 @@ namespace ClassicVolumeMixer
         private static String WinDir = System.Environment.GetEnvironmentVariable("SystemRoot");  //location of windows installation
         private String mixerPath = WinDir + "\\System32\\sndvol.exe";
         private String soundControlPath = WinDir + "\\System32\\mmsys.cpl";
-        private bool win11 = new ManagementObjectSearcher("SELECT Caption FROM Win32_OperatingSystem").Get().Cast<ManagementObject>().FirstOrDefault().GetPropertyValue("Caption").ToString().Contains("Windows 11");
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
         private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem sounds = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem closeClick = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem adjustWidth = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem hideMixer = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
@@ -66,8 +66,9 @@ namespace ClassicVolumeMixer
                      sounds,
                      closeClick,
                      adjustWidth,
+                     hideMixer,
                      exit
-            });
+            }) ;
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
@@ -83,6 +84,10 @@ namespace ClassicVolumeMixer
             adjustWidth.Checked = true;
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
 
+            hideMixer.Text = "hide mixer instead of closing it";
+            hideMixer.Checked = false;
+            hideMixer.Click += new System.EventHandler(hideMixerToggle);
+
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
@@ -91,6 +96,11 @@ namespace ClassicVolumeMixer
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
 
+        }
+
+        private void hideMixerToggle(object sender, EventArgs e)
+        {
+            hideMixer.Checked = !hideMixer.Checked;
         }
 
         private void adjustWidthToggle(object sender, EventArgs e)
@@ -191,7 +201,7 @@ namespace ClassicVolumeMixer
 
         private void closeMixer()
         {
-            if (win11)
+            if (hideMixer.Checked)
             {
                 ShowWindowAsync(handle, 0);
                 isVisible = false;
