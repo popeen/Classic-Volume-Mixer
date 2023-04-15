@@ -55,7 +55,6 @@ namespace ClassicVolumeMixer
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
-            notifyIcon.MouseMove += new MouseEventHandler(notifyIcon_MouseMove);
             notifyIcon.ContextMenuStrip = contextMenu;
 
             contextMenu.Opening += ContextMenu_Opening;
@@ -126,17 +125,12 @@ namespace ClassicVolumeMixer
             soundProcess.Start();
         }
 
-        private void notifyIcon_MouseMove(object sender, MouseEventArgs e)
-        {
-            stopwatch.Restart();
-        }
-
         private void notifyIcon_Click(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
                 //check if the mixer is currently open. 
-                if (this.process.HasExited)
+                if (this.process.HasExited && stopwatch.ElapsedMilliseconds > 100)
                 {
                     openClassicMixer();
                     isVisible = true;
@@ -149,7 +143,7 @@ namespace ClassicVolumeMixer
                         closeMixer();
                         timer.Stop();
                     }
-                    else
+                    else if (stopwatch.ElapsedMilliseconds > 100)
                     {
                         ShowWindowAsync(handle, 1);
                         SetForegroundWindow(handle);
@@ -187,9 +181,10 @@ namespace ClassicVolumeMixer
         private void timer_Tick(object sender, EventArgs e)
         {
             IntPtr foregroundWindow = GetForegroundWindow();
-            if ((foregroundWindow != handle) && closeClick.Checked && ((stopwatch.ElapsedMilliseconds > 1000) || foregroundWindow != taskbar))
+            if ((foregroundWindow != handle) && closeClick.Checked)
             {
                 closeMixer();
+                stopwatch.Restart();
                 timer.Stop();
             }
         }
