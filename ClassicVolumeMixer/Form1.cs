@@ -259,6 +259,7 @@ namespace ClassicVolumeMixer
                 this.handle = process.MainWindowHandle;
                 setMixerPositionAndSize();
             }
+            SetForegroundWindow(this.handle);
         }
 
         //sets the mixers position to bottom right of the PrimaryScreen and adjusts the window width depending on the number of active sound application
