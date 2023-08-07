@@ -84,7 +84,7 @@ namespace ClassicVolumeMixer
             adjustWidth.Checked = true;
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
 
-            hideMixer.Text = "hide mixer instead of closing it";
+            hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Checked = false;
             hideMixer.Click += new System.EventHandler(hideMixerToggle);
 
