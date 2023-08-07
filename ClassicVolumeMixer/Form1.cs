@@ -5,6 +5,8 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections;
+using System.Management;
+using System.Linq;
 
 namespace ClassicVolumeMixer
 {
@@ -21,6 +23,7 @@ namespace ClassicVolumeMixer
         private ToolStripMenuItem sounds = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem closeClick = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem adjustWidth = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem hideMixer = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
@@ -52,7 +55,6 @@ namespace ClassicVolumeMixer
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
-            notifyIcon.MouseMove += new MouseEventHandler(notifyIcon_MouseMove);
             notifyIcon.ContextMenuStrip = contextMenu;
 
             contextMenu.Opening += ContextMenu_Opening;
@@ -64,8 +66,9 @@ namespace ClassicVolumeMixer
                      sounds,
                      closeClick,
                      adjustWidth,
+                     hideMixer,
                      exit
-            });
+            }) ;
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
@@ -81,6 +84,10 @@ namespace ClassicVolumeMixer
             adjustWidth.Checked = true;
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
 
+            hideMixer.Text = "hide mixer instead of closing it";
+            hideMixer.Checked = false;
+            hideMixer.Click += new System.EventHandler(hideMixerToggle);
+
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
@@ -89,6 +96,11 @@ namespace ClassicVolumeMixer
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
 
+        }
+
+        private void hideMixerToggle(object sender, EventArgs e)
+        {
+            hideMixer.Checked = !hideMixer.Checked;
         }
 
         private void adjustWidthToggle(object sender, EventArgs e)
@@ -123,17 +135,12 @@ namespace ClassicVolumeMixer
             soundProcess.Start();
         }
 
-        private void notifyIcon_MouseMove(object sender, MouseEventArgs e)
-        {
-            stopwatch.Restart();
-        }
-
         private void notifyIcon_Click(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
                 //check if the mixer is currently open. 
-                if (this.process.HasExited)
+                if (this.process.HasExited && stopwatch.ElapsedMilliseconds > 100)
                 {
                     openClassicMixer();
                     isVisible = true;
@@ -143,17 +150,17 @@ namespace ClassicVolumeMixer
                 {
                     if (isVisible)
                     {
-                        ShowWindowAsync(handle, 0);
+                        closeMixer();
                         timer.Stop();
                     }
-                    else
+                    else if (stopwatch.ElapsedMilliseconds > 100)
                     {
                         ShowWindowAsync(handle, 1);
                         SetForegroundWindow(handle);
                         setMixerPositionAndSize();
                         timer.Start();
+                        isVisible = true;
                     }
-                    isVisible = !isVisible;
                 }
             }
         }
@@ -184,11 +191,27 @@ namespace ClassicVolumeMixer
         private void timer_Tick(object sender, EventArgs e)
         {
             IntPtr foregroundWindow = GetForegroundWindow();
-            if ((foregroundWindow != handle) && closeClick.Checked && ((stopwatch.ElapsedMilliseconds > 1000) || foregroundWindow != taskbar))
+            if ((foregroundWindow != handle) && closeClick.Checked)
+            {
+                closeMixer();
+                stopwatch.Restart();
+                timer.Stop();
+            }
+        }
+
+        private void closeMixer()
+        {
+            if (hideMixer.Checked)
             {
                 ShowWindowAsync(handle, 0);
                 isVisible = false;
-                timer.Stop();
+            }
+            else
+            {
+                if (!this.process.HasExited)
+                {
+                    this.process.Kill();
+                }
             }
         }
 
@@ -241,6 +264,7 @@ namespace ClassicVolumeMixer
                 this.handle = process.MainWindowHandle;
                 setMixerPositionAndSize();
             }
+            SetForegroundWindow(this.handle);
         }
 
         //sets the mixers position to bottom right of the PrimaryScreen and adjusts the window width depending on the number of active sound application
