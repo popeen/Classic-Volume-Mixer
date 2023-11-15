@@ -3,7 +3,7 @@ In Windows 11 the old volume mixer was "removed" and instead a new mixer was add
 
 I really don't like this due to it's HUGE size in comparison. Luckily the old exe is still available in system32, so we just need a convenient way to open it. 
 
-Thats what this is, this repo contains a super simple application which only purpose is to add a new icon in the system tray that can be used to launch the old mixer.
+Thats pretty much what this is, this repo contains an application that add a new icon in the system tray that can be used to launch the old mixer.
 It also comes with a few optional quality of life improvements, you can turn them on and off if you right click on the icon
 
 # Installation
