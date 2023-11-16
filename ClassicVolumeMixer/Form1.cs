@@ -16,7 +16,8 @@ namespace ClassicVolumeMixer
         // private static String drive = System.Environment.GetEnvironmentVariable("SystemDrive");
         private static String WinDir = System.Environment.GetEnvironmentVariable("SystemRoot");  //location of windows installation
         private String mixerPath = WinDir + "\\System32\\sndvol.exe";
-        private String soundControlPath = WinDir + "\\System32\\mmsys.cpl";
+        private String ControlPanelPath = WinDir + "\\Sysnative\\control";
+        private String SoundPanelArgument = "mmsys.cpl";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
         private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
@@ -130,7 +131,8 @@ namespace ClassicVolumeMixer
         private void openSoundControl(object sender, EventArgs e)
         {
             Process soundProcess = new Process();
-            soundProcess.StartInfo.FileName = soundControlPath;
+            soundProcess.StartInfo.FileName = ControlPanelPath;
+            soundProcess.StartInfo.Arguments = SoundPanelArgument;
             soundProcess.StartInfo.UseShellExecute = true;
             soundProcess.Start();
         }
