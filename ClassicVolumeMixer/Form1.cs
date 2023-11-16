@@ -15,7 +15,7 @@ namespace ClassicVolumeMixer
         // it's better to use the Windows Directory directly, because it can change and no be "Windows".
         // private static String drive = System.Environment.GetEnvironmentVariable("SystemDrive");
         private static String WinDir = System.Environment.GetEnvironmentVariable("SystemRoot");  //location of windows installation
-        private String mixerPath = WinDir + "\\System32\\sndvol.exe";
+        private String mixerPath = WinDir + "\\Sysnative\\sndvol.exe";
         private String controlPanelPath = WinDir + "\\Sysnative\\control";
         private String soundPanelArgument = "mmsys.cpl";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
