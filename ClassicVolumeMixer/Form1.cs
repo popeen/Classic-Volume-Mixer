@@ -6,6 +6,8 @@ using System.Windows.Forms;
 using System.Collections;
 using System.IO;
 using System.Text.Json;
+using CoreAudio;
+using System.Collections.Generic;
 
 namespace ClassicVolumeMixer
 {
@@ -37,14 +39,24 @@ namespace ClassicVolumeMixer
         private Process process;
         private Timer timer = new Timer();
         private IntPtr taskbar = IntPtr.Zero;
+        Point rightClickPosition = new Point();
         Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
         private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
+        String defaultAudioDevice;
 
         public Form1()
         {
             InitializeComponent();
+            MMDeviceEnumerator test = new CoreAudio.MMDeviceEnumerator(new Guid());
+            foreach (var item in new CoreAudio.MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+            {
+                Console.WriteLine(item.DeviceFriendlyName);
+                Console.WriteLine(item.DeviceFriendlyName.Remove(item.DeviceFriendlyName.Length - item.DeviceInterfaceFriendlyName.Length - 3));
+            };
+
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -56,10 +68,58 @@ namespace ClassicVolumeMixer
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
-            notifyIcon.ContextMenuStrip = contextMenu;
+            loadContextMenu();
+
+            taskbar = FindWindow("Shell_TrayWnd", null);
+
+            timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
+            timer.Tick += new EventHandler(timer_Tick);
+
+
+            if (File.Exists(saveFile))
+            {
+                readOptions();
+            }
+            else
+            {
+                writeOptions();
+            }
+        }
+
+        private void loadContextMenu()
+        {
+            contextMenu = new System.Windows.Forms.ContextMenuStrip();
 
             contextMenu.Opening += ContextMenu_Opening;
             contextMenu.Closing += ContextMenu_Closing;
+
+            foreach (MMDevice device in new CoreAudio.MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
+            {
+                ToolStripMenuItem audioMenuItem = new ToolStripMenuItem(device.DeviceFriendlyName);
+                contextMenu.Items.Add(audioMenuItem);
+                if (device.Selected)
+                {
+                    audioMenuItem.Checked = true;
+                }
+
+                audioMenuItem.Click += (sender2, e2) => setDefaultAudioDevice(device);
+            }
+
+            contextMenu.Items.Add(new ToolStripSeparator());
+
+            foreach (MMDevice device in new CoreAudio.MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+            {
+                ToolStripMenuItem audioMenuItem = new ToolStripMenuItem(device.DeviceFriendlyName);
+                contextMenu.Items.Add(audioMenuItem);
+                if (device.Selected)
+                {
+                    audioMenuItem.Checked = true;
+                }
+
+                audioMenuItem.Click += (sender2, e2) => setDefaultAudioDevice(device);
+            }
+
+            contextMenu.Items.Add(new ToolStripSeparator());
 
             contextMenu.Items.AddRange(new
                 System.Windows.Forms.ToolStripMenuItem[] {
@@ -69,7 +129,7 @@ namespace ClassicVolumeMixer
                      adjustWidth,
                      hideMixer,
                      exit
-            });
+        });
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
@@ -92,20 +152,13 @@ namespace ClassicVolumeMixer
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
 
-            taskbar = FindWindow("Shell_TrayWnd", null);
+            notifyIcon.ContextMenuStrip = contextMenu;
+        }
 
-            timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
-            timer.Tick += new EventHandler(timer_Tick);
-
-
-            if (File.Exists(saveFile))
-            {
-                readOptions();
-            }
-            else
-            {
-                writeOptions();
-            }
+        private void setDefaultAudioDevice(MMDevice device)
+        {
+            new CoreAudio.CPolicyConfigVistaClient().SetDefaultDevice(device.ID);
+            loadContextMenu();
         }
 
         /**
@@ -326,6 +379,16 @@ namespace ClassicVolumeMixer
         {
             windowHandles.Add(windowHandle);
             return true;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            //WM_DEVICECHANGE = 0x0219;
+            if (m.Msg == 0x0219)
+            {
+                loadContextMenu();
+            }
+            base.WndProc(ref m);
         }
     }
 }
