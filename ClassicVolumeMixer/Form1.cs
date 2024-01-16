@@ -45,14 +45,6 @@ namespace ClassicVolumeMixer
         public Form1()
         {
             InitializeComponent();
-            if (File.Exists(saveFile))
-            {
-                readOptions();
-            }
-            else
-            {
-                writeOptions();
-            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -105,6 +97,15 @@ namespace ClassicVolumeMixer
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
 
+
+            if (File.Exists(saveFile))
+            {
+                readOptions();
+            }
+            else
+            {
+                writeOptions();
+            }
         }
 
         /**
