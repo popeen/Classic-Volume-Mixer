@@ -1,15 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections;
-using System.Management;
-using System.Linq;
+using System.IO;
+using System.Text.Json;
 
 namespace ClassicVolumeMixer
 {
+    public class Options
+    {
+        public bool closeClick { get; set; }
+        public bool adjustWidth { get; set; }
+        public bool hideMixer { get; set; }
+    }
+
+
     public partial class Form1 : Form
     {
         // it's better to use the Windows Directory directly, because it can change and no be "Windows".
@@ -18,6 +25,7 @@ namespace ClassicVolumeMixer
         private String mixerPath = WinDir + "\\Sysnative\\sndvol.exe";
         private String controlPanelPath = WinDir + "\\Sysnative\\control.exe";
         private String soundPanelArgument = "mmsys.cpl";
+        private String saveFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ClassicVolumeMixerSettings.json";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
         private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
@@ -32,18 +40,18 @@ namespace ClassicVolumeMixer
         Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
+        private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
 
         public Form1()
         {
             InitializeComponent();
-            Process[] processlist = Process.GetProcesses();
-
-            foreach (Process process in processlist)
+            if (File.Exists(saveFile))
             {
-                if (!String.IsNullOrEmpty(process.MainWindowTitle))
-                {
-                    Console.WriteLine("Process: {0} ID: {1} Window title: {2}", process.ProcessName, process.Id, process.MainWindowTitle);
-                }
+                readOptions();
+            }
+            else
+            {
+                writeOptions();
             }
         }
 
@@ -69,7 +77,7 @@ namespace ClassicVolumeMixer
                      adjustWidth,
                      hideMixer,
                      exit
-            }) ;
+            });
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
@@ -99,14 +107,37 @@ namespace ClassicVolumeMixer
 
         }
 
+        /**
+        * reads the options from a json file and adjusts the checkboxes acordingly
+        */
+        private void readOptions()
+        {
+            options = JsonSerializer.Deserialize<Options>(File.ReadAllText(saveFile));
+            closeClick.Checked = options.closeClick;
+            adjustWidth.Checked = options.adjustWidth;
+            hideMixer.Checked = options.hideMixer;
+        }
+
+        /**
+         * writes the options to a json file
+         */
+        private void writeOptions()
+        {
+            File.WriteAllText(saveFile, JsonSerializer.Serialize(options));
+        }
+
         private void hideMixerToggle(object sender, EventArgs e)
         {
             hideMixer.Checked = !hideMixer.Checked;
+            options.hideMixer = !options.hideMixer;
+            writeOptions();
         }
 
         private void adjustWidthToggle(object sender, EventArgs e)
         {
             adjustWidth.Checked = !adjustWidth.Checked;
+            options.adjustWidth = !options.adjustWidth;
+            writeOptions();
         }
 
         private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
@@ -126,6 +157,8 @@ namespace ClassicVolumeMixer
         {
             closeClick.Checked = !closeClick.Checked;
             SetForegroundWindow(handle);
+            options.closeClick = !options.closeClick;
+            writeOptions();
         }
 
         private void openSoundControl(object sender, EventArgs e)
