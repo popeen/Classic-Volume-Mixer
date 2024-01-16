@@ -6,7 +6,6 @@ using System.Windows.Forms;
 using System.Collections;
 using System.IO;
 using System.Text.Json;
-using AudioSwitcher;
 using CoreAudio;
 using System.Collections.Generic;
 
@@ -380,6 +379,16 @@ namespace ClassicVolumeMixer
         {
             windowHandles.Add(windowHandle);
             return true;
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            //WM_DEVICECHANGE = 0x0219;
+            if (m.Msg == 0x0219)
+            {
+                loadContextMenu();
+            }
+            base.WndProc(ref m);
         }
     }
 }
