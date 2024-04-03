@@ -7,7 +7,6 @@ using System.Collections;
 using System.IO;
 using System.Text.Json;
 using CoreAudio;
-using System.Collections.Generic;
 
 namespace ClassicVolumeMixer
 {
@@ -27,6 +26,7 @@ namespace ClassicVolumeMixer
         private String mixerPath = WinDir + "\\Sysnative\\sndvol.exe";
         private String controlPanelPath = WinDir + "\\Sysnative\\control.exe";
         private String soundPanelArgument = "mmsys.cpl";
+        private String soundIconsPath = WinDir + "\\Sysnative\\SndVolSSO.dll";
         private String saveFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ClassicVolumeMixerSettings.json";
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
@@ -38,13 +38,15 @@ namespace ClassicVolumeMixer
         private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
+        private Timer VolumeChangeTimer = new Timer();
         private IntPtr taskbar = IntPtr.Zero;
         Point rightClickPosition = new Point();
         Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
         private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
-        String defaultAudioDevice;
+        MMDevice defaultAudioDevice;
+        Icon[] icons = new Icon[6];
 
         public Form1()
         {
@@ -59,6 +61,10 @@ namespace ClassicVolumeMixer
 
         }
 
+        [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
+        private static extern int ExtractIconEx(string sFile, int iIndex, out IntPtr piLargeVersion, out IntPtr piSmallVersion, int amountIcons);
+
+
         private void Form1_Load(object sender, EventArgs e)
         {
             this.ShowInTaskbar = false;
@@ -70,10 +76,35 @@ namespace ClassicVolumeMixer
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
             loadContextMenu();
 
+
+            IntPtr large = new IntPtr();
+            IntPtr small = new IntPtr();
+
+            ExtractIconEx(soundIconsPath, 3, out large, out small, 1); // one bar
+            icons[0] = Icon.FromHandle(large);
+
+            ExtractIconEx(soundIconsPath, 4, out large, out small, 1); // two bars
+            icons[1] = Icon.FromHandle(large);
+
+            ExtractIconEx(soundIconsPath, 5, out large, out small, 1); // three bars
+            icons[2] = icons[3] = Icon.FromHandle(large);
+
+            ExtractIconEx(soundIconsPath, 1, out large, out small, 1); // mute
+            icons[4] = Icon.FromHandle(large);
+
+            ExtractIconEx(soundIconsPath, 2, out large, out small, 1); // zero bars
+            icons[5] = Icon.FromHandle(large);
+
+
             taskbar = FindWindow("Shell_TrayWnd", null);
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
+
+            VolumeChangeTimer.Interval = 100;
+            VolumeChangeTimer.Tick += new EventHandler(VolumeChangeTimer_tick);
+            VolumeChangeTimer.Start();
+
 
 
             if (File.Exists(saveFile))
@@ -83,6 +114,20 @@ namespace ClassicVolumeMixer
             else
             {
                 writeOptions();
+            }
+        }
+
+        private void VolumeChangeTimer_tick(object sender, EventArgs e)
+        {
+            int volume = (int)(defaultAudioDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
+            if (defaultAudioDevice.AudioEndpointVolume.Mute) {
+                notifyIcon.Icon = icons[4];
+            }
+            else if(volume == 0) {
+                notifyIcon.Icon = icons[5];
+            }
+            else { 
+                notifyIcon.Icon = icons[((volume - 1) / 33)]; 
             }
         }
 
@@ -113,6 +158,7 @@ namespace ClassicVolumeMixer
                 contextMenu.Items.Add(audioMenuItem);
                 if (device.Selected)
                 {
+                    defaultAudioDevice = device;
                     audioMenuItem.Checked = true;
                 }
 
@@ -384,9 +430,9 @@ namespace ClassicVolumeMixer
         protected override void WndProc(ref Message m)
         {
             //WM_DEVICECHANGE = 0x0219;
-            if (m.Msg == 0x0219)
-            {
-                loadContextMenu();
+            if (m.Msg == 0x0219) 
+            { 
+                loadContextMenu(); 
             }
             base.WndProc(ref m);
         }
