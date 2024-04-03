@@ -43,7 +43,6 @@ namespace ClassicVolumeMixer
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
         private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
-        MMDevice defaultAudioDevice;
         Icon[] icons = new Icon[6];
 
         public Form1()
@@ -64,13 +63,6 @@ namespace ClassicVolumeMixer
         {
             this.ShowInTaskbar = false;
             this.Visible = false;
-
-            notifyIcon.Icon = Icon.ExtractAssociatedIcon(mixerPath);
-            notifyIcon.Text = "Classic Mixer";
-            notifyIcon.Visible = true;
-            notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
-            loadContextMenu();
-
 
             IntPtr large = new IntPtr();
             IntPtr small = new IntPtr();
@@ -98,6 +90,11 @@ namespace ClassicVolumeMixer
             VolumeChangeTimer.Start();
 
 
+            notifyIcon.Text = "Classic Mixer";
+            notifyIcon.Visible = true;
+            notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
+            loadContextMenu();
+
 
             if (File.Exists(saveFile))
             {
@@ -116,6 +113,7 @@ namespace ClassicVolumeMixer
 
         private void changeTrayIconVolume()
         {
+            MMDevice defaultAudioDevice = new MMDeviceEnumerator(new Guid()).GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
             int volume = (int)(defaultAudioDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
             if (defaultAudioDevice.AudioEndpointVolume.Mute)
             {
@@ -158,7 +156,6 @@ namespace ClassicVolumeMixer
                 contextMenu.Items.Add(audioMenuItem);
                 if (device.Selected)
                 {
-                    defaultAudioDevice = device;
                     audioMenuItem.Checked = true;
                 }
 
@@ -204,7 +201,6 @@ namespace ClassicVolumeMixer
         private void setDefaultAudioDevice(MMDevice device)
         {
             new CoreAudio.CPolicyConfigVistaClient().SetDefaultDevice(device.ID);
-            defaultAudioDevice = device;
             changeTrayIconVolume();
             loadContextMenu();
         }
