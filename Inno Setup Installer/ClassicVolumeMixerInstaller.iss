@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Classic Volume Mixer"
-#define MyAppVersion "2.4"
+#define MyAppVersion "24.04.1"
 #define MyAppPublisher "PopeenCom"
 #define MyAppURL "https://popeen.com"
 #define MyAppExeName "ClassicVolumeMixer.exe"
@@ -32,7 +32,7 @@ WizardStyle=modern
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\ClassicVolumeMixer\bin\Release\*"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
