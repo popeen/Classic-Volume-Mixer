@@ -44,6 +44,7 @@ namespace ClassicVolumeMixer
         bool isVisible;
         private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
         Icon[] icons = new Icon[6];
+        private bool showNoAudioDeviceWarning = true;
 
         public Form1()
         {
@@ -113,19 +114,30 @@ namespace ClassicVolumeMixer
 
         private void changeTrayIconVolume()
         {
-            MMDevice defaultAudioDevice = new MMDeviceEnumerator(new Guid()).GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-            int volume = (int)(defaultAudioDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
-            if (defaultAudioDevice.AudioEndpointVolume.Mute)
+            try
             {
-                notifyIcon.Icon = icons[4];
+                MMDevice defaultAudioDevice = new MMDeviceEnumerator(new Guid()).GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                int volume = (int)(defaultAudioDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
+                if (defaultAudioDevice.AudioEndpointVolume.Mute)
+                {
+                    notifyIcon.Icon = icons[4];
+                }
+                else if (volume == 0)
+                {
+                    notifyIcon.Icon = icons[5];
+                }
+                else
+                {
+                    notifyIcon.Icon = icons[((volume - 1) / 33)];
+                }
             }
-            else if (volume == 0)
+            catch (Exception e)
             {
-                notifyIcon.Icon = icons[5];
-            }
-            else
-            {
-                notifyIcon.Icon = icons[((volume - 1) / 33)];
+                if (showNoAudioDeviceWarning) {
+                    showNoAudioDeviceWarning = false;
+                    MessageBox.Show("There is no audio device on the system. Classic Volume Mixer will close.", "Classic Volume Mixer", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    Application.Exit();
+                }
             }
         }
 
