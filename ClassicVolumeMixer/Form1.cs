@@ -95,16 +95,6 @@ namespace ClassicVolumeMixer
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
             loadContextMenu();
-
-
-            if (File.Exists(saveFile))
-            {
-                readOptions();
-            }
-            else
-            {
-                writeOptions();
-            }
         }
 
         private void VolumeChangeTimer_tick(object sender, EventArgs e)
@@ -184,7 +174,19 @@ namespace ClassicVolumeMixer
                      adjustWidth,
                      hideMixer,
                      exit
-        });
+            });
+
+            if (File.Exists(saveFile))
+            {
+                readOptions();
+            }
+            else
+            {
+                closeClick.Checked = true;
+                adjustWidth.Checked = true;
+                hideMixer.Checked = false;
+                writeOptions();
+            }
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
@@ -193,15 +195,12 @@ namespace ClassicVolumeMixer
             sounds.Click += new System.EventHandler(openSoundControl);
 
             closeClick.Text = "Close by clicking outside the window";
-            closeClick.Checked = true;
             closeClick.Click += new System.EventHandler(closeClickToggle);
 
             adjustWidth.Text = "Dynamically adjust window width";
-            adjustWidth.Checked = true;
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
 
             hideMixer.Text = "Hide mixer instead of closing it";
-            hideMixer.Checked = false;
             hideMixer.Click += new System.EventHandler(hideMixerToggle);
 
             exit.Text = "Exit";
