@@ -187,13 +187,13 @@ namespace ClassicVolumeMixer
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
-            closeClick.Checked = options.closeClick;
 
             sounds.Text = "Sound";
             sounds.Click += new System.EventHandler(openSoundControl);
 
             closeClick.Text = "Close by clicking outside the window";
             closeClick.Click += new System.EventHandler(closeClickToggle);
+            closeClick.Checked = options.closeClick;
 
             adjustWidth.Text = "Dynamically adjust window width";
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
