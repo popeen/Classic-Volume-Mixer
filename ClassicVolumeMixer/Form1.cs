@@ -182,14 +182,12 @@ namespace ClassicVolumeMixer
             }
             else
             {
-                closeClick.Checked = true;
-                adjustWidth.Checked = true;
-                hideMixer.Checked = false;
                 writeOptions();
             }
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += new System.EventHandler(openClassic_Click);
+            closeClick.Checked = options.closeClick;
 
             sounds.Text = "Sound";
             sounds.Click += new System.EventHandler(openSoundControl);
@@ -199,9 +197,11 @@ namespace ClassicVolumeMixer
 
             adjustWidth.Text = "Dynamically adjust window width";
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
+            adjustWidth.Checked = options.adjustWidth;
 
             hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Click += new System.EventHandler(hideMixerToggle);
+            hideMixer.Checked = options.hideMixer;
 
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
@@ -222,9 +222,6 @@ namespace ClassicVolumeMixer
         private void readOptions()
         {
             options = JsonSerializer.Deserialize<Options>(File.ReadAllText(saveFile));
-            closeClick.Checked = options.closeClick;
-            adjustWidth.Checked = options.adjustWidth;
-            hideMixer.Checked = options.hideMixer;
         }
 
         /**
