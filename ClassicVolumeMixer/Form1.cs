@@ -7,6 +7,7 @@ using System.Collections;
 using System.IO;
 using System.Text.Json;
 using CoreAudio;
+using Microsoft.Win32;
 
 namespace ClassicVolumeMixer
 {
@@ -15,7 +16,6 @@ namespace ClassicVolumeMixer
         public bool closeClick { get; set; }
         public bool adjustWidth { get; set; }
         public bool hideMixer { get; set; }
-        public bool useDarkIcon { get; set; }
     }
 
 
@@ -36,7 +36,6 @@ namespace ClassicVolumeMixer
         private ToolStripMenuItem closeClick = new ToolStripMenuItem();
         private ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
         private ToolStripMenuItem hideMixer = new ToolStripMenuItem();
-        private ToolStripMenuItem useDarkIcon = new ToolStripMenuItem();
         private ToolStripMenuItem exit = new ToolStripMenuItem();
 
         private Process process;
@@ -46,7 +45,7 @@ namespace ClassicVolumeMixer
         IntPtr handle;
 
         bool isVisible;
-        private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false, useDarkIcon = false };
+        private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
         Icon[] icons = new Icon[6];
         private bool showNoAudioDeviceWarning = true;
 
@@ -85,13 +84,38 @@ namespace ClassicVolumeMixer
             return icon;
         }
 
+        public static bool shouldUseDarkIcon()
+        {
+            // Define the registry path
+            string keyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+            string valueName = "SystemUsesLightTheme";
+
+            // Open the registry key
+            using (RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath))
+            {
+                if (key != null)
+                {
+                    // Read the value
+                    object value = key.GetValue(valueName);
+
+                    if (value != null && value is int)
+                    {
+                        int systemUsesLightTheme = (int)value;
+                        return systemUsesLightTheme == 1;
+                    }
+                }
+            }
+
+            return false;
+        }
         private void setIcons()
         {                
-            icons[0] = ExtractIcon(soundIconsPath, 3, useDarkIcon.Checked); // one bar
-            icons[1] = ExtractIcon(soundIconsPath, 4, useDarkIcon.Checked); // two bars
-            icons[2] = icons[3] = ExtractIcon(soundIconsPath, 5, useDarkIcon.Checked); // three bars
-            icons[4] = ExtractIcon(soundIconsPath, 1, useDarkIcon.Checked); // mute
-            icons[5] = ExtractIcon(soundIconsPath, 2, useDarkIcon.Checked); // zero bars
+            bool shouldUseDark = shouldUseDarkIcon();
+            icons[0] = ExtractIcon(soundIconsPath, 3, shouldUseDark); // one bar
+            icons[1] = ExtractIcon(soundIconsPath, 4, shouldUseDark); // two bars
+            icons[2] = icons[3] = ExtractIcon(soundIconsPath, 5, shouldUseDark); // three bars
+            icons[4] = ExtractIcon(soundIconsPath, 1, shouldUseDark); // mute
+            icons[5] = ExtractIcon(soundIconsPath, 2, shouldUseDark); // zero bars
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -202,7 +226,6 @@ namespace ClassicVolumeMixer
                      closeClick,
                      adjustWidth,
                      hideMixer,
-                     useDarkIcon,
                      exit
         });
 
@@ -223,10 +246,6 @@ namespace ClassicVolumeMixer
             hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Checked = options.hideMixer;
             hideMixer.Click += new EventHandler(hideMixerToggle);
-
-            useDarkIcon.Text = "Use dark icon";
-            useDarkIcon.Checked = options.useDarkIcon;
-            useDarkIcon.Click += new EventHandler(useDarkIconToggle);
 
             exit.Text = "Exit";
             exit.Click += new EventHandler(exit_Click);
@@ -264,14 +283,6 @@ namespace ClassicVolumeMixer
         {
             hideMixer.Checked = !hideMixer.Checked;
             options.hideMixer = !options.hideMixer;
-            writeOptions();
-        }
-
-        private void useDarkIconToggle(object sender, EventArgs e)
-        {
-            useDarkIcon.Checked = !useDarkIcon.Checked;
-            options.useDarkIcon = !options.useDarkIcon;
-            setIcons();
             writeOptions();
         }
 
