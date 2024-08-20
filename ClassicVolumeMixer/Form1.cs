@@ -148,7 +148,7 @@ namespace ClassicVolumeMixer
                     notifyIcon.Icon = icons[((volume - 1) / 33)];
                 }
             }
-            catch (Exception e)
+            catch
             {
                 if (showNoAudioDeviceWarning)
                 {
