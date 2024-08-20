@@ -21,28 +21,29 @@ namespace ClassicVolumeMixer
 
     public partial class Form1 : Form
     {
-        // it's better to use the Windows Directory directly, because it can change and no be "Windows".
-        // private static String drive = System.Environment.GetEnvironmentVariable("SystemDrive");
-        private static String WinDir = System.Environment.GetEnvironmentVariable("SystemRoot");  //location of windows installation
+        private static String WinDir = Environment.GetEnvironmentVariable("SystemRoot");
         private String mixerPath = WinDir + "\\Sysnative\\sndvol.exe";
         private String controlPanelPath = WinDir + "\\Sysnative\\control.exe";
         private String soundPanelArgument = "mmsys.cpl";
         private String soundIconsPath = WinDir + "\\Sysnative\\SndVolSSO.dll";
         private String saveFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ClassicVolumeMixerSettings.json";
+
         private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
-        private ContextMenuStrip contextMenu = new System.Windows.Forms.ContextMenuStrip();
-        private ToolStripMenuItem openClassic = new System.Windows.Forms.ToolStripMenuItem();
-        private ToolStripMenuItem sounds = new System.Windows.Forms.ToolStripMenuItem();
-        private ToolStripMenuItem closeClick = new System.Windows.Forms.ToolStripMenuItem();
-        private ToolStripMenuItem adjustWidth = new System.Windows.Forms.ToolStripMenuItem();
-        private ToolStripMenuItem hideMixer = new System.Windows.Forms.ToolStripMenuItem();
-        private ToolStripMenuItem useDarkIcon = new System.Windows.Forms.ToolStripMenuItem();
-        private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
+        private ContextMenuStrip contextMenu = new ContextMenuStrip();
+        private ToolStripMenuItem openClassic = new ToolStripMenuItem();
+        private ToolStripMenuItem sounds = new ToolStripMenuItem();
+        private ToolStripMenuItem closeClick = new ToolStripMenuItem();
+        private ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
+        private ToolStripMenuItem hideMixer = new ToolStripMenuItem();
+        private ToolStripMenuItem useDarkIcon = new ToolStripMenuItem();
+        private ToolStripMenuItem exit = new ToolStripMenuItem();
+
         private Process process;
         private Timer timer = new Timer();
         private Timer VolumeChangeTimer = new Timer();
         Stopwatch stopwatch = Stopwatch.StartNew();
-        IntPtr handle; // the handle of the mixer window
+        IntPtr handle;
+
         bool isVisible;
         private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false, useDarkIcon = false };
         Icon[] icons = new Icon[6];
@@ -51,7 +52,7 @@ namespace ClassicVolumeMixer
         public Form1()
         {
             InitializeComponent();
-            foreach (var item in new CoreAudio.MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
+            foreach (var item in new MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
             {
                 Console.WriteLine(item.DeviceFriendlyName);
                 Console.WriteLine(item.DeviceFriendlyName.Remove(item.DeviceFriendlyName.Length - item.DeviceInterfaceFriendlyName.Length - 3));
@@ -60,63 +61,38 @@ namespace ClassicVolumeMixer
 
         [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         private static extern int ExtractIconEx(string sFile, int iIndex, out IntPtr piLargeVersion, out IntPtr piSmallVersion, int amountIcons);
-
-        private Icon FlipIconColors(Icon originalIcon)
+        private Icon ExtractIcon(string sFile, int iIndex, Boolean flipColors)
         {
-            Bitmap bitmap = originalIcon.ToBitmap();
-            for (int y = 0; y < bitmap.Height; y++)
+            IntPtr intPtr = new IntPtr();
+            ExtractIconEx(sFile, 3, out intPtr, out intPtr, 1);
+            Icon icon = Icon.FromHandle(intPtr);
+
+            if(flipColors)
             {
-                for (int x = 0; x < bitmap.Width; x++)
+                Bitmap bitmap = icon.ToBitmap();
+                for (int y = 0; y < bitmap.Height; y++)
                 {
-                    Color pixelColor = bitmap.GetPixel(x, y);
-                    Color flippedColor = Color.FromArgb(pixelColor.A, 255 - pixelColor.R, 255 - pixelColor.G, 255 - pixelColor.B);
-                    bitmap.SetPixel(x, y, flippedColor);
+                    for (int x = 0; x < bitmap.Width; x++)
+                    {
+                        Color pixelColor = bitmap.GetPixel(x, y);
+                        Color flippedColor = Color.FromArgb(pixelColor.A, 255 - pixelColor.R, 255 - pixelColor.G, 255 - pixelColor.B);
+                        bitmap.SetPixel(x, y, flippedColor);
+                    }
                 }
+                icon = Icon.FromHandle(bitmap.GetHicon());
             }
-            return Icon.FromHandle(bitmap.GetHicon());
+            return icon;
         }
 
         private void setIcons()
-        {
-            IntPtr large = new IntPtr();
-            IntPtr small = new IntPtr();
-
-            if (useDarkIcon.Checked)
-            {
-                ExtractIconEx(soundIconsPath, 3, out large, out small, 1); // one bar
-                icons[0] = FlipIconColors(Icon.FromHandle(large));
-
-                ExtractIconEx(soundIconsPath, 4, out large, out small, 1); // two bars
-                icons[1] = FlipIconColors(Icon.FromHandle(large));
-
-                ExtractIconEx(soundIconsPath, 5, out large, out small, 1); // three bars
-                icons[2] = icons[3] = FlipIconColors(Icon.FromHandle(large));
-
-                ExtractIconEx(soundIconsPath, 1, out large, out small, 1); // mute
-                icons[4] = FlipIconColors(Icon.FromHandle(large));
-
-                ExtractIconEx(soundIconsPath, 2, out large, out small, 1); // zero bars
-                icons[5] = FlipIconColors(Icon.FromHandle(large));
-            }
-            else
-            {
-                ExtractIconEx(soundIconsPath, 3, out large, out small, 1); // one bar
-                icons[0] = Icon.FromHandle(large);
-
-                ExtractIconEx(soundIconsPath, 4, out large, out small, 1); // two bars
-                icons[1] = Icon.FromHandle(large);
-
-                ExtractIconEx(soundIconsPath, 5, out large, out small, 1); // three bars
-                icons[2] = icons[3] = Icon.FromHandle(large);
-
-                ExtractIconEx(soundIconsPath, 1, out large, out small, 1); // mute
-                icons[4] = Icon.FromHandle(large);
-
-                ExtractIconEx(soundIconsPath, 2, out large, out small, 1); // zero bars
-                icons[5] = Icon.FromHandle(large);
-            }
-
+        {                
+            icons[0] = ExtractIcon(soundIconsPath, 3, useDarkIcon.Checked); // one bar
+            icons[1] = ExtractIcon(soundIconsPath, 4, useDarkIcon.Checked); // two bars
+            icons[2] = icons[3] = ExtractIcon(soundIconsPath, 5, useDarkIcon.Checked); // three bars
+            icons[4] = ExtractIcon(soundIconsPath, 1, useDarkIcon.Checked); // mute
+            icons[5] = ExtractIcon(soundIconsPath, 2, useDarkIcon.Checked); // zero bars
         }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             this.ShowInTaskbar = false;
