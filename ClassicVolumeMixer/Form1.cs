@@ -15,6 +15,7 @@ namespace ClassicVolumeMixer
         public bool closeClick { get; set; }
         public bool adjustWidth { get; set; }
         public bool hideMixer { get; set; }
+        public bool useDarkIcon { get; set; }
     }
 
 
@@ -35,6 +36,7 @@ namespace ClassicVolumeMixer
         private ToolStripMenuItem closeClick = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem adjustWidth = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem hideMixer = new System.Windows.Forms.ToolStripMenuItem();
+        private ToolStripMenuItem useDarkIcon = new System.Windows.Forms.ToolStripMenuItem();
         private ToolStripMenuItem exit = new System.Windows.Forms.ToolStripMenuItem();
         private Process process;
         private Timer timer = new Timer();
@@ -42,7 +44,7 @@ namespace ClassicVolumeMixer
         Stopwatch stopwatch = Stopwatch.StartNew();
         IntPtr handle; // the handle of the mixer window
         bool isVisible;
-        private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
+        private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false, useDarkIcon = false };
         Icon[] icons = new Icon[6];
         private bool showNoAudioDeviceWarning = true;
 
@@ -59,29 +61,68 @@ namespace ClassicVolumeMixer
         [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         private static extern int ExtractIconEx(string sFile, int iIndex, out IntPtr piLargeVersion, out IntPtr piSmallVersion, int amountIcons);
 
+        private Icon FlipIconColors(Icon originalIcon)
+        {
+            Bitmap bitmap = originalIcon.ToBitmap();
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    Color pixelColor = bitmap.GetPixel(x, y);
+                    Color flippedColor = Color.FromArgb(pixelColor.A, 255 - pixelColor.R, 255 - pixelColor.G, 255 - pixelColor.B);
+                    bitmap.SetPixel(x, y, flippedColor);
+                }
+            }
+            return Icon.FromHandle(bitmap.GetHicon());
+        }
 
+        private void setIcons()
+        {
+            IntPtr large = new IntPtr();
+            IntPtr small = new IntPtr();
+
+            if (useDarkIcon.Checked)
+            {
+                ExtractIconEx(soundIconsPath, 3, out large, out small, 1); // one bar
+                icons[0] = FlipIconColors(Icon.FromHandle(large));
+
+                ExtractIconEx(soundIconsPath, 4, out large, out small, 1); // two bars
+                icons[1] = FlipIconColors(Icon.FromHandle(large));
+
+                ExtractIconEx(soundIconsPath, 5, out large, out small, 1); // three bars
+                icons[2] = icons[3] = FlipIconColors(Icon.FromHandle(large));
+
+                ExtractIconEx(soundIconsPath, 1, out large, out small, 1); // mute
+                icons[4] = FlipIconColors(Icon.FromHandle(large));
+
+                ExtractIconEx(soundIconsPath, 2, out large, out small, 1); // zero bars
+                icons[5] = FlipIconColors(Icon.FromHandle(large));
+            }
+            else
+            {
+                ExtractIconEx(soundIconsPath, 3, out large, out small, 1); // one bar
+                icons[0] = Icon.FromHandle(large);
+
+                ExtractIconEx(soundIconsPath, 4, out large, out small, 1); // two bars
+                icons[1] = Icon.FromHandle(large);
+
+                ExtractIconEx(soundIconsPath, 5, out large, out small, 1); // three bars
+                icons[2] = icons[3] = Icon.FromHandle(large);
+
+                ExtractIconEx(soundIconsPath, 1, out large, out small, 1); // mute
+                icons[4] = Icon.FromHandle(large);
+
+                ExtractIconEx(soundIconsPath, 2, out large, out small, 1); // zero bars
+                icons[5] = Icon.FromHandle(large);
+            }
+
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
             this.ShowInTaskbar = false;
             this.Visible = false;
 
-            IntPtr large = new IntPtr();
-            IntPtr small = new IntPtr();
-
-            ExtractIconEx(soundIconsPath, 3, out large, out small, 1); // one bar
-            icons[0] = Icon.FromHandle(large);
-
-            ExtractIconEx(soundIconsPath, 4, out large, out small, 1); // two bars
-            icons[1] = Icon.FromHandle(large);
-
-            ExtractIconEx(soundIconsPath, 5, out large, out small, 1); // three bars
-            icons[2] = icons[3] = Icon.FromHandle(large);
-
-            ExtractIconEx(soundIconsPath, 1, out large, out small, 1); // mute
-            icons[4] = Icon.FromHandle(large);
-
-            ExtractIconEx(soundIconsPath, 2, out large, out small, 1); // zero bars
-            icons[5] = Icon.FromHandle(large);
+            setIcons();
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += new EventHandler(timer_Tick);
@@ -184,6 +225,7 @@ namespace ClassicVolumeMixer
                      closeClick,
                      adjustWidth,
                      hideMixer,
+                     useDarkIcon,
                      exit
         });
 
@@ -204,6 +246,10 @@ namespace ClassicVolumeMixer
             hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Checked = options.hideMixer;
             hideMixer.Click += new System.EventHandler(hideMixerToggle);
+
+            useDarkIcon.Text = "Use dark icon";
+            useDarkIcon.Checked = options.useDarkIcon;
+            useDarkIcon.Click += new System.EventHandler(useDarkIconToggle);
 
             exit.Text = "Exit";
             exit.Click += new System.EventHandler(exit_Click);
@@ -241,6 +287,14 @@ namespace ClassicVolumeMixer
         {
             hideMixer.Checked = !hideMixer.Checked;
             options.hideMixer = !options.hideMixer;
+            writeOptions();
+        }
+
+        private void useDarkIconToggle(object sender, EventArgs e)
+        {
+            useDarkIcon.Checked = !useDarkIcon.Checked;
+            options.useDarkIcon = !options.useDarkIcon;
+            setIcons();
             writeOptions();
         }
 
