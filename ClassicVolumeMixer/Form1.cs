@@ -133,7 +133,8 @@ namespace ClassicVolumeMixer
             }
             catch (Exception e)
             {
-                if (showNoAudioDeviceWarning) {
+                if (showNoAudioDeviceWarning)
+                {
                     showNoAudioDeviceWarning = false;
                     MessageBox.Show("There is no audio device on the system. Classic Volume Mixer will close.", "Classic Volume Mixer", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     Application.Exit();
@@ -193,15 +194,15 @@ namespace ClassicVolumeMixer
             sounds.Click += new System.EventHandler(openSoundControl);
 
             closeClick.Text = "Close by clicking outside the window";
-            closeClick.Checked = true;
+            closeClick.Checked = options.closeClick;
             closeClick.Click += new System.EventHandler(closeClickToggle);
 
             adjustWidth.Text = "Dynamically adjust window width";
-            adjustWidth.Checked = true;
+            adjustWidth.Checked = options.adjustWidth;
             adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
 
             hideMixer.Text = "Hide mixer instead of closing it";
-            hideMixer.Checked = false;
+            hideMixer.Checked = options.hideMixer;
             hideMixer.Click += new System.EventHandler(hideMixerToggle);
 
             exit.Text = "Exit";
