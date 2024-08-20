@@ -21,6 +21,7 @@ namespace ClassicVolumeMixer
 
     public partial class Form1 : Form
     {
+
         private static String WinDir = Environment.GetEnvironmentVariable("SystemRoot");
         private String mixerPath = WinDir + "\\Sysnative\\sndvol.exe";
         private String controlPanelPath = WinDir + "\\Sysnative\\control.exe";
@@ -64,7 +65,7 @@ namespace ClassicVolumeMixer
         private Icon ExtractIcon(string sFile, int iIndex, Boolean flipColors)
         {
             IntPtr intPtr = new IntPtr();
-            ExtractIconEx(sFile, 3, out intPtr, out intPtr, 1);
+            ExtractIconEx(sFile, iIndex, out intPtr, out intPtr, 1);
             Icon icon = Icon.FromHandle(intPtr);
 
             if(flipColors)
@@ -195,7 +196,7 @@ namespace ClassicVolumeMixer
             contextMenu.Items.Add(new ToolStripSeparator());
 
             contextMenu.Items.AddRange(new
-                System.Windows.Forms.ToolStripMenuItem[] {
+                ToolStripMenuItem[] {
                      openClassic,
                      sounds,
                      closeClick,
@@ -206,29 +207,29 @@ namespace ClassicVolumeMixer
         });
 
             openClassic.Text = "Open Classic Volume Mixer";
-            openClassic.Click += new System.EventHandler(openClassic_Click);
+            openClassic.Click += new EventHandler(openClassic_Click);
 
             sounds.Text = "Sound";
-            sounds.Click += new System.EventHandler(openSoundControl);
+            sounds.Click += new EventHandler(openSoundControl);
 
             closeClick.Text = "Close by clicking outside the window";
             closeClick.Checked = options.closeClick;
-            closeClick.Click += new System.EventHandler(closeClickToggle);
+            closeClick.Click += new EventHandler(closeClickToggle);
 
             adjustWidth.Text = "Dynamically adjust window width";
             adjustWidth.Checked = options.adjustWidth;
-            adjustWidth.Click += new System.EventHandler(adjustWidthToggle);
+            adjustWidth.Click += new EventHandler(adjustWidthToggle);
 
             hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Checked = options.hideMixer;
-            hideMixer.Click += new System.EventHandler(hideMixerToggle);
+            hideMixer.Click += new EventHandler(hideMixerToggle);
 
             useDarkIcon.Text = "Use dark icon";
             useDarkIcon.Checked = options.useDarkIcon;
-            useDarkIcon.Click += new System.EventHandler(useDarkIconToggle);
+            useDarkIcon.Click += new EventHandler(useDarkIconToggle);
 
             exit.Text = "Exit";
-            exit.Click += new System.EventHandler(exit_Click);
+            exit.Click += new EventHandler(exit_Click);
 
             notifyIcon.ContextMenuStrip = contextMenu;
         }
