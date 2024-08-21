@@ -20,3 +20,4 @@ If you get smartscreen error (blue box popup) this is because the file has not b
 -----
 
 ![Screenshot](size.png)
+![Menu](menu.png)
