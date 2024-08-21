@@ -33,6 +33,7 @@ namespace ClassicVolumeMixer
         private ContextMenuStrip contextMenu = new ContextMenuStrip();
         private readonly ToolStripMenuItem openClassic = new ToolStripMenuItem();
         private readonly ToolStripMenuItem sounds = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem soundsModern = new ToolStripMenuItem();
         private readonly ToolStripMenuItem closeClick = new ToolStripMenuItem();
         private readonly ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
         private readonly ToolStripMenuItem hideMixer = new ToolStripMenuItem();
@@ -141,17 +142,26 @@ namespace ClassicVolumeMixer
             contextMenu.Items.AddRange(new ToolStripMenuItem[] {
                 openClassic,
                 sounds,
+                soundsModern
+            });
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.AddRange(new ToolStripMenuItem[] {
                 closeClick,
                 adjustWidth,
                 hideMixer,
-                exit
             });
+            contextMenu.Items.Add(new ToolStripSeparator());
+            contextMenu.Items.Add(exit);
+            
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += OpenClassic_Click;
 
-            sounds.Text = "Sound";
+            sounds.Text = "Open Classic Sound Settings";
             sounds.Click += OpenSoundControl;
+
+            soundsModern.Text = "Open Modern Sound Settings";
+            soundsModern.Click += OpenModernSoundControl;
 
             closeClick.Text = "Close by clicking outside the window";
             closeClick.Checked = options.CloseClick;
@@ -247,6 +257,18 @@ namespace ClassicVolumeMixer
                 {
                     FileName = controlPanelPath,
                     Arguments = soundPanelArgument,
+                    UseShellExecute = true
+                }
+            };
+            soundProcess.Start();
+        }
+        private void OpenModernSoundControl(object sender, EventArgs e)
+        {
+            Process soundProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ms-settings:sound",
                     UseShellExecute = true
                 }
             };
