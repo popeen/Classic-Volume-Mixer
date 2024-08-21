@@ -68,8 +68,8 @@ namespace ClassicVolumeMixer
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.ShowInTaskbar = false;
-            this.Visible = false;
+            ShowInTaskbar = false;
+            Visible = false;
 
             SetIcons();
 
@@ -181,15 +181,31 @@ namespace ClassicVolumeMixer
 
             closeClick.Text = "Close by clicking outside the window";
             closeClick.Checked = options.CloseClick;
-            closeClick.Click += CloseClickToggle;
+            closeClick.Click += (sender, e) =>
+            {
+                closeClick.Checked = !closeClick.Checked;
+                options.CloseClick = !options.CloseClick;
+                WindowHelper.SetForegroundWindow(handle);
+                WriteOptions();
+            };
 
             adjustWidth.Text = "Dynamically adjust window width";
             adjustWidth.Checked = options.AdjustWidth;
-            adjustWidth.Click += AdjustWidthToggle;
+            adjustWidth.Click += (sender, e) =>
+            {
+                adjustWidth.Checked = !adjustWidth.Checked;
+                options.AdjustWidth = !options.AdjustWidth;
+                WriteOptions();
+            };
 
             hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Checked = options.HideMixer;
-            hideMixer.Click += HideMixerToggle;
+            hideMixer.Click += (sender, e) =>
+            {
+                hideMixer.Checked = !hideMixer.Checked;
+                options.HideMixer = !options.HideMixer;
+                WriteOptions();
+            };
         }
 
         private void AddExitMenuItem()
@@ -232,20 +248,6 @@ namespace ClassicVolumeMixer
             File.WriteAllText(saveFile, JsonSerializer.Serialize(options));
         }
 
-        private void HideMixerToggle(object sender, EventArgs e)
-        {
-            hideMixer.Checked = !hideMixer.Checked;
-            options.HideMixer = !options.HideMixer;
-            WriteOptions();
-        }
-
-        private void AdjustWidthToggle(object sender, EventArgs e)
-        {
-            adjustWidth.Checked = !adjustWidth.Checked;
-            options.AdjustWidth = !options.AdjustWidth;
-            WriteOptions();
-        }
-
         private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
         {
             if (isVisible)
@@ -257,14 +259,6 @@ namespace ClassicVolumeMixer
         private void ContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             timer.Stop();
-        }
-
-        private void CloseClickToggle(object sender, EventArgs e)
-        {
-            closeClick.Checked = !closeClick.Checked;
-            WindowHelper.SetForegroundWindow(handle);
-            options.CloseClick = !options.CloseClick;
-            WriteOptions();
         }
 
         private void StartProcess(String filename, String arguments = "")
