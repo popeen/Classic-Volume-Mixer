@@ -31,9 +31,10 @@ namespace ClassicVolumeMixer
 
         private readonly NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new ContextMenuStrip();
-        private readonly ToolStripMenuItem openClassic = new ToolStripMenuItem();
-        private readonly ToolStripMenuItem sounds = new ToolStripMenuItem();
-        private readonly ToolStripMenuItem soundsModern = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem openClassicVolumeMixer = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem openClassicSounds = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem openModernSounds = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem openModernVolumeMixer = new ToolStripMenuItem();
         private readonly ToolStripMenuItem closeClick = new ToolStripMenuItem();
         private readonly ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
         private readonly ToolStripMenuItem hideMixer = new ToolStripMenuItem();
@@ -149,20 +150,24 @@ namespace ClassicVolumeMixer
         private void AddMenuItems()
         {
             contextMenu.Items.AddRange(new ToolStripMenuItem[] {
-                openClassic,
-                sounds,
-                soundsModern
+                openClassicVolumeMixer,
+                openClassicSounds,
+                openModernVolumeMixer,
+                openModernSounds
             });
             contextMenu.Items.Add(new ToolStripSeparator());
 
-            openClassic.Text = "Open Classic Volume Mixer";
-            openClassic.Click += OpenClassic_Click;
+            openClassicVolumeMixer.Text = "Open Classic Volume Mixer";
+            openClassicVolumeMixer.Click += OpenClassicMixer_Click;
 
-            sounds.Text = "Open Classic Sound Settings";
-            sounds.Click += OpenSoundControl;
+            openClassicSounds.Text = "Open Classic Sound Settings";
+            openClassicSounds.Click += (sender, e) => StartProcess(controlPanelPath, soundPanelArgument);
 
-            soundsModern.Text = "Open Modern Sound Settings";
-            soundsModern.Click += OpenModernSoundControl;
+            openModernVolumeMixer.Text = "Open Modern Volume Mixer";
+            openModernVolumeMixer.Click += (sender, e) => OpenSettingsPage("apps-volume");
+
+            openModernSounds.Text = "Open Modern Sound Settings";
+            openModernSounds.Click += (sender, e) => OpenSettingsPage("sound");
         }
 
         private void AddOptionsMenuItems()
@@ -262,30 +267,22 @@ namespace ClassicVolumeMixer
             WriteOptions();
         }
 
-        private void OpenSoundControl(object sender, EventArgs e)
+        private void StartProcess(String filename, String arguments = "")
         {
-            Process soundProcess = new Process
+            Process process = new Process
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = controlPanelPath,
-                    Arguments = soundPanelArgument,
+                    FileName = filename,
+                    Arguments = arguments,
                     UseShellExecute = true
                 }
             };
-            soundProcess.Start();
+            process.Start();
         }
-        private void OpenModernSoundControl(object sender, EventArgs e)
+        private void OpenSettingsPage(string page)
         {
-            Process soundProcess = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = "ms-settings:sound",
-                    UseShellExecute = true
-                }
-            };
-            soundProcess.Start();
+            StartProcess($"ms-settings:{page}");
         }
 
         private void NotifyIcon_Click(object sender, MouseEventArgs e)
@@ -317,7 +314,7 @@ namespace ClassicVolumeMixer
             }
         }
 
-        private void OpenClassic_Click(object sender, EventArgs e)
+        private void OpenClassicMixer_Click(object sender, EventArgs e)
         {
             if (process.HasExited)
             {
