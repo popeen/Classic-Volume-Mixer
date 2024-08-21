@@ -139,20 +139,21 @@ namespace ClassicVolumeMixer
             AddAudioDevicesToContextMenu(DataFlow.Render);
             contextMenu.Items.Add(new ToolStripSeparator());
 
+            AddMenuItems();
+            AddOptionsMenuItems();
+            AddExitMenuItem();
+
+            notifyIcon.ContextMenuStrip = contextMenu;
+        }
+
+        private void AddMenuItems()
+        {
             contextMenu.Items.AddRange(new ToolStripMenuItem[] {
                 openClassic,
                 sounds,
                 soundsModern
             });
             contextMenu.Items.Add(new ToolStripSeparator());
-            contextMenu.Items.AddRange(new ToolStripMenuItem[] {
-                closeClick,
-                adjustWidth,
-                hideMixer,
-            });
-            contextMenu.Items.Add(new ToolStripSeparator());
-            contextMenu.Items.Add(exit);
-            
 
             openClassic.Text = "Open Classic Volume Mixer";
             openClassic.Click += OpenClassic_Click;
@@ -162,6 +163,16 @@ namespace ClassicVolumeMixer
 
             soundsModern.Text = "Open Modern Sound Settings";
             soundsModern.Click += OpenModernSoundControl;
+        }
+
+        private void AddOptionsMenuItems()
+        {
+            contextMenu.Items.AddRange(new ToolStripMenuItem[] {
+                closeClick,
+                adjustWidth,
+                hideMixer,
+            });
+            contextMenu.Items.Add(new ToolStripSeparator());
 
             closeClick.Text = "Close by clicking outside the window";
             closeClick.Checked = options.CloseClick;
@@ -174,11 +185,13 @@ namespace ClassicVolumeMixer
             hideMixer.Text = "Hide mixer instead of closing it";
             hideMixer.Checked = options.HideMixer;
             hideMixer.Click += HideMixerToggle;
+        }
 
+        private void AddExitMenuItem()
+        {
             exit.Text = "Exit";
             exit.Click += Exit_Click;
-
-            notifyIcon.ContextMenuStrip = contextMenu;
+            contextMenu.Items.Add(exit);
         }
 
         private void AddAudioDevicesToContextMenu(DataFlow dataFlow)
