@@ -1,11 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Diagnostics;
 using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using System.Collections;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Windows.Forms;
 using CoreAudio;
 using Microsoft.Win32;
 
@@ -13,104 +13,105 @@ namespace ClassicVolumeMixer
 {
     public class Options
     {
-        public bool closeClick { get; set; }
-        public bool adjustWidth { get; set; }
-        public bool hideMixer { get; set; }
+        public bool CloseClick { get; set; }
+        public bool AdjustWidth { get; set; }
+        public bool HideMixer { get; set; }
     }
-
 
     public partial class Form1 : Form
     {
+        private static readonly string WinDir = Environment.GetEnvironmentVariable("SystemRoot");
+        private readonly string mixerPath = Path.Combine(WinDir, "Sysnative", "sndvol.exe");
+        private readonly string controlPanelPath = Path.Combine(WinDir, "Sysnative", "control.exe");
+        private readonly string soundPanelArgument = "mmsys.cpl";
+        private readonly string soundIconsPath = Path.Combine(WinDir, "Sysnative", "SndVolSSO.dll");
+        private readonly string saveFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ClassicVolumeMixerSettings.json");
 
-        private static String WinDir = Environment.GetEnvironmentVariable("SystemRoot");
-        private String mixerPath = WinDir + "\\Sysnative\\sndvol.exe";
-        private String controlPanelPath = WinDir + "\\Sysnative\\control.exe";
-        private String soundPanelArgument = "mmsys.cpl";
-        private String soundIconsPath = WinDir + "\\Sysnative\\SndVolSSO.dll";
-        private String saveFile = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ClassicVolumeMixerSettings.json";
-
-        private NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
+        private readonly NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new ContextMenuStrip();
-        private ToolStripMenuItem openClassic = new ToolStripMenuItem();
-        private ToolStripMenuItem sounds = new ToolStripMenuItem();
-        private ToolStripMenuItem closeClick = new ToolStripMenuItem();
-        private ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
-        private ToolStripMenuItem hideMixer = new ToolStripMenuItem();
-        private ToolStripMenuItem exit = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem openClassic = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem sounds = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem closeClick = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem hideMixer = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem exit = new ToolStripMenuItem();
 
-        private Process process;
-        private Timer timer = new Timer();
-        private Timer VolumeChangeTimer = new Timer();
-        Stopwatch stopwatch = Stopwatch.StartNew();
-        IntPtr handle;
+        private Process process = new Process();
+        private readonly Timer timer = new Timer();
+        private readonly Timer volumeChangeTimer = new Timer();
+        private readonly Stopwatch stopwatch = Stopwatch.StartNew();
+        private IntPtr handle;
 
-        bool isVisible;
-        private Options options = new Options { adjustWidth = true, closeClick = true, hideMixer = false };
-        Icon[] icons = new Icon[6];
+        private bool isVisible;
+        private Options options = new Options { AdjustWidth = true, CloseClick = true, HideMixer = false };
+        private readonly Icon[] icons = new Icon[6];
         private bool showNoAudioDeviceWarning = true;
 
         public Form1()
         {
             InitializeComponent();
+            EnumerateAudioDevices();
+        }
+
+        private void EnumerateAudioDevices()
+        {
             foreach (var item in new MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
             {
                 Console.WriteLine(item.DeviceFriendlyName);
                 Console.WriteLine(item.DeviceFriendlyName.Remove(item.DeviceFriendlyName.Length - item.DeviceInterfaceFriendlyName.Length - 3));
-            };
+            }
         }
 
         [DllImport("Shell32.dll", EntryPoint = "ExtractIconExW", CharSet = CharSet.Unicode, ExactSpelling = true, CallingConvention = CallingConvention.StdCall)]
         private static extern int ExtractIconEx(string sFile, int iIndex, out IntPtr piLargeVersion, out IntPtr piSmallVersion, int amountIcons);
-        private Icon ExtractIcon(string sFile, int iIndex, Boolean flipColors)
+
+        private Icon ExtractIcon(string sFile, int iIndex, bool flipColors)
         {
-            IntPtr intPtr = new IntPtr();
-            ExtractIconEx(sFile, iIndex, out intPtr, out intPtr, 1);
+            ExtractIconEx(sFile, iIndex, out IntPtr intPtr, out _, 1);
             Icon icon = Icon.FromHandle(intPtr);
 
-            if(flipColors)
+            if (flipColors)
             {
-                Bitmap bitmap = icon.ToBitmap();
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    for (int x = 0; x < bitmap.Width; x++)
-                    {
-                        Color pixelColor = bitmap.GetPixel(x, y);
-                        Color flippedColor = Color.FromArgb(pixelColor.A, 255 - pixelColor.R, 255 - pixelColor.G, 255 - pixelColor.B);
-                        bitmap.SetPixel(x, y, flippedColor);
-                    }
-                }
-                icon = Icon.FromHandle(bitmap.GetHicon());
+                icon = FlipIconColors(icon);
             }
             return icon;
         }
 
-        public static bool shouldUseDarkIcon()
+        private Icon FlipIconColors(Icon icon)
         {
-            // Define the registry path
-            string keyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
-            string valueName = "SystemUsesLightTheme";
+            Bitmap bitmap = icon.ToBitmap();
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    Color pixelColor = bitmap.GetPixel(x, y);
+                    Color flippedColor = Color.FromArgb(pixelColor.A, 255 - pixelColor.R, 255 - pixelColor.G, 255 - pixelColor.B);
+                    bitmap.SetPixel(x, y, flippedColor);
+                }
+            }
+            return Icon.FromHandle(bitmap.GetHicon());
+        }
 
-            // Open the registry key
+        public static bool ShouldUseDarkIcon()
+        {
+            const string keyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
             using (RegistryKey key = Registry.CurrentUser.OpenSubKey(keyPath))
             {
                 if (key != null)
                 {
-                    // Read the value
-                    object value = key.GetValue(valueName);
-
-                    if (value != null && value is int)
+                    object value = key.GetValue("SystemUsesLightTheme");
+                    if (value is int systemUsesLightTheme)
                     {
-                        int systemUsesLightTheme = (int)value;
                         return systemUsesLightTheme == 1;
                     }
                 }
             }
-
             return false;
         }
-        private void setIcons()
-        {                
-            bool shouldUseDark = shouldUseDarkIcon();
+
+        private void SetIcons()
+        {
+            bool shouldUseDark = ShouldUseDarkIcon();
             icons[0] = ExtractIcon(soundIconsPath, 3, shouldUseDark); // one bar
             icons[1] = ExtractIcon(soundIconsPath, 4, shouldUseDark); // two bars
             icons[2] = icons[3] = ExtractIcon(soundIconsPath, 5, shouldUseDark); // three bars
@@ -123,38 +124,36 @@ namespace ClassicVolumeMixer
             this.ShowInTaskbar = false;
             this.Visible = false;
 
-            setIcons();
+            SetIcons();
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
-            timer.Tick += new EventHandler(timer_Tick);
+            timer.Tick += Timer_Tick;
 
-            VolumeChangeTimer.Interval = 100;
-            VolumeChangeTimer.Tick += new EventHandler(VolumeChangeTimer_tick);
-            VolumeChangeTimer.Start();
-
+            volumeChangeTimer.Interval = 100;
+            volumeChangeTimer.Tick += VolumeChangeTimer_Tick;
+            volumeChangeTimer.Start();
 
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
-            notifyIcon.MouseClick += new MouseEventHandler(notifyIcon_Click);
-            loadContextMenu();
-
+            notifyIcon.MouseClick += NotifyIcon_Click;
+            LoadContextMenu();
 
             if (File.Exists(saveFile))
             {
-                readOptions();
+                ReadOptions();
             }
             else
             {
-                writeOptions();
+                WriteOptions();
             }
         }
 
-        private void VolumeChangeTimer_tick(object sender, EventArgs e)
+        private void VolumeChangeTimer_Tick(object sender, EventArgs e)
         {
-            changeTrayIconVolume();
+            ChangeTrayIconVolume();
         }
 
-        private void changeTrayIconVolume()
+        private void ChangeTrayIconVolume()
         {
             try
             {
@@ -184,113 +183,98 @@ namespace ClassicVolumeMixer
             }
         }
 
-        private void loadContextMenu()
+        private void LoadContextMenu()
         {
-            contextMenu = new System.Windows.Forms.ContextMenuStrip();
+            contextMenu = new ContextMenuStrip();
 
             contextMenu.Opening += ContextMenu_Opening;
             contextMenu.Closing += ContextMenu_Closing;
 
-            foreach (MMDevice device in new CoreAudio.MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active))
-            {
-                ToolStripMenuItem audioMenuItem = new ToolStripMenuItem(device.DeviceFriendlyName);
-                contextMenu.Items.Add(audioMenuItem);
-                if (device.Selected)
-                {
-                    audioMenuItem.Checked = true;
-                }
-
-                audioMenuItem.Click += (sender2, e2) => setDefaultAudioDevice(device);
-            }
-
+            AddAudioDevicesToContextMenu(DataFlow.Capture);
+            contextMenu.Items.Add(new ToolStripSeparator());
+            AddAudioDevicesToContextMenu(DataFlow.Render);
             contextMenu.Items.Add(new ToolStripSeparator());
 
-            foreach (MMDevice device in new CoreAudio.MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active))
-            {
-                ToolStripMenuItem audioMenuItem = new ToolStripMenuItem(device.DeviceFriendlyName);
-                contextMenu.Items.Add(audioMenuItem);
-                if (device.Selected)
-                {
-                    audioMenuItem.Checked = true;
-                }
-
-                audioMenuItem.Click += (sender2, e2) => setDefaultAudioDevice(device);
-            }
-
-            contextMenu.Items.Add(new ToolStripSeparator());
-
-            contextMenu.Items.AddRange(new
-                ToolStripMenuItem[] {
-                     openClassic,
-                     sounds,
-                     closeClick,
-                     adjustWidth,
-                     hideMixer,
-                     exit
-        });
+            contextMenu.Items.AddRange(new ToolStripMenuItem[] {
+                openClassic,
+                sounds,
+                closeClick,
+                adjustWidth,
+                hideMixer,
+                exit
+            });
 
             openClassic.Text = "Open Classic Volume Mixer";
-            openClassic.Click += new EventHandler(openClassic_Click);
+            openClassic.Click += OpenClassic_Click;
 
             sounds.Text = "Sound";
-            sounds.Click += new EventHandler(openSoundControl);
+            sounds.Click += OpenSoundControl;
 
             closeClick.Text = "Close by clicking outside the window";
-            closeClick.Checked = options.closeClick;
-            closeClick.Click += new EventHandler(closeClickToggle);
+            closeClick.Checked = options.CloseClick;
+            closeClick.Click += CloseClickToggle;
 
             adjustWidth.Text = "Dynamically adjust window width";
-            adjustWidth.Checked = options.adjustWidth;
-            adjustWidth.Click += new EventHandler(adjustWidthToggle);
+            adjustWidth.Checked = options.AdjustWidth;
+            adjustWidth.Click += AdjustWidthToggle;
 
             hideMixer.Text = "Hide mixer instead of closing it";
-            hideMixer.Checked = options.hideMixer;
-            hideMixer.Click += new EventHandler(hideMixerToggle);
+            hideMixer.Checked = options.HideMixer;
+            hideMixer.Click += HideMixerToggle;
 
             exit.Text = "Exit";
-            exit.Click += new EventHandler(exit_Click);
+            exit.Click += Exit_Click;
 
             notifyIcon.ContextMenuStrip = contextMenu;
         }
 
-        private void setDefaultAudioDevice(MMDevice device)
+        private void AddAudioDevicesToContextMenu(DataFlow dataFlow)
+        {
+            foreach (MMDevice device in new MMDeviceEnumerator(new Guid()).EnumerateAudioEndPoints(dataFlow, DeviceState.Active))
+            {
+                ToolStripMenuItem audioMenuItem = new ToolStripMenuItem(device.DeviceFriendlyName);
+                contextMenu.Items.Add(audioMenuItem);
+                if (device.Selected)
+                {
+                    audioMenuItem.Checked = true;
+                }
+
+                audioMenuItem.Click += (sender, e) => SetDefaultAudioDevice(device);
+            }
+        }
+
+        private void SetDefaultAudioDevice(MMDevice device)
         {
             new CoreAudio.CPolicyConfigVistaClient().SetDefaultDevice(device.ID);
-            changeTrayIconVolume();
-            loadContextMenu();
+            ChangeTrayIconVolume();
+            LoadContextMenu();
         }
 
-        /**
-        * reads the options from a json file and adjusts the checkboxes acordingly
-        */
-        private void readOptions()
+        private void ReadOptions()
         {
             options = JsonSerializer.Deserialize<Options>(File.ReadAllText(saveFile));
-            closeClick.Checked = options.closeClick;
-            adjustWidth.Checked = options.adjustWidth;
-            hideMixer.Checked = options.hideMixer;
+            closeClick.Checked = options.CloseClick;
+            adjustWidth.Checked = options.AdjustWidth;
+            hideMixer.Checked = options.HideMixer;
         }
 
-        /**
-         * writes the options to a json file
-         */
-        private void writeOptions()
+        private void WriteOptions()
         {
             File.WriteAllText(saveFile, JsonSerializer.Serialize(options));
         }
 
-        private void hideMixerToggle(object sender, EventArgs e)
+        private void HideMixerToggle(object sender, EventArgs e)
         {
             hideMixer.Checked = !hideMixer.Checked;
-            options.hideMixer = !options.hideMixer;
-            writeOptions();
+            options.HideMixer = !options.HideMixer;
+            WriteOptions();
         }
 
-        private void adjustWidthToggle(object sender, EventArgs e)
+        private void AdjustWidthToggle(object sender, EventArgs e)
         {
             adjustWidth.Checked = !adjustWidth.Checked;
-            options.adjustWidth = !options.adjustWidth;
-            writeOptions();
+            options.AdjustWidth = !options.AdjustWidth;
+            WriteOptions();
         }
 
         private void ContextMenu_Closing(object sender, ToolStripDropDownClosingEventArgs e)
@@ -306,31 +290,35 @@ namespace ClassicVolumeMixer
             timer.Stop();
         }
 
-        private void closeClickToggle(object sender, EventArgs e)
+        private void CloseClickToggle(object sender, EventArgs e)
         {
             closeClick.Checked = !closeClick.Checked;
             SetForegroundWindow(handle);
-            options.closeClick = !options.closeClick;
-            writeOptions();
+            options.CloseClick = !options.CloseClick;
+            WriteOptions();
         }
 
-        private void openSoundControl(object sender, EventArgs e)
+        private void OpenSoundControl(object sender, EventArgs e)
         {
-            Process soundProcess = new Process();
-            soundProcess.StartInfo.FileName = controlPanelPath;
-            soundProcess.StartInfo.Arguments = soundPanelArgument;
-            soundProcess.StartInfo.UseShellExecute = true;
+            Process soundProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = controlPanelPath,
+                    Arguments = soundPanelArgument,
+                    UseShellExecute = true
+                }
+            };
             soundProcess.Start();
         }
 
-        private void notifyIcon_Click(object sender, MouseEventArgs e)
+        private void NotifyIcon_Click(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                //check if the mixer is currently open. 
-                if (this.process.HasExited && stopwatch.ElapsedMilliseconds > 100)
+                if (process.HasExited && stopwatch.ElapsedMilliseconds > 100)
                 {
-                    openClassicMixer();
+                    OpenClassicMixer();
                     isVisible = true;
                     timer.Start();
                 }
@@ -338,14 +326,14 @@ namespace ClassicVolumeMixer
                 {
                     if (isVisible)
                     {
-                        closeMixer();
+                        CloseMixer();
                         timer.Stop();
                     }
                     else if (stopwatch.ElapsedMilliseconds > 100)
                     {
                         ShowWindowAsync(handle, 1);
                         SetForegroundWindow(handle);
-                        setMixerPositionAndSize();
+                        SetMixerPositionAndSize();
                         timer.Start();
                         isVisible = true;
                     }
@@ -353,11 +341,11 @@ namespace ClassicVolumeMixer
             }
         }
 
-        private void openClassic_Click(object sender, EventArgs e)
+        private void OpenClassic_Click(object sender, EventArgs e)
         {
-            if (this.process.HasExited)
+            if (process.HasExited)
             {
-                openClassicMixer();
+                OpenClassicMixer();
             }
             else
             {
@@ -367,27 +355,28 @@ namespace ClassicVolumeMixer
             isVisible = true;
             timer.Start();
         }
-        private void exit_Click(object sender, EventArgs e)
+
+        private void Exit_Click(object sender, EventArgs e)
         {
-            if (!this.process.HasExited)
+            if (!process.HasExited)
             {
-                this.process.Kill();
+                process.Kill();
             }
             this.Close();
         }
 
-        private void timer_Tick(object sender, EventArgs e)
+        private void Timer_Tick(object sender, EventArgs e)
         {
             IntPtr foregroundWindow = GetForegroundWindow();
             if ((foregroundWindow != handle) && closeClick.Checked)
             {
-                closeMixer();
+                CloseMixer();
                 stopwatch.Restart();
                 timer.Stop();
             }
         }
 
-        private void closeMixer()
+        private void CloseMixer()
         {
             if (hideMixer.Checked)
             {
@@ -396,9 +385,9 @@ namespace ClassicVolumeMixer
             }
             else
             {
-                if (!this.process.HasExited)
+                if (!process.HasExited)
                 {
-                    this.process.Kill();
+                    process.Kill();
                 }
             }
         }
@@ -426,8 +415,6 @@ namespace ClassicVolumeMixer
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
-
-
         [StructLayout(LayoutKind.Sequential)]
         public struct Rect
         {
@@ -439,24 +426,23 @@ namespace ClassicVolumeMixer
 
         private delegate bool EnumedWindow(IntPtr handleWindow, ArrayList handles);
 
-        private void openClassicMixer()
+        private void OpenClassicMixer()
         {
-            this.process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            this.process.Start();
-            this.process.WaitForInputIdle();
+            process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            process.Start();
+            process.WaitForInputIdle();
 
             Process[] processes = Process.GetProcessesByName("SndVol");
             foreach (Process process in processes)
             {
                 while (process.MainWindowHandle == IntPtr.Zero) { } //busy waiting until the window is open
-                this.handle = process.MainWindowHandle;
-                setMixerPositionAndSize();
+                handle = process.MainWindowHandle;
+                SetMixerPositionAndSize();
             }
-            SetForegroundWindow(this.handle);
+            SetForegroundWindow(handle);
         }
 
-        //sets the mixers position to bottom right of the PrimaryScreen and adjusts the window width depending on the number of active sound application
-        private void setMixerPositionAndSize()
+        private void SetMixerPositionAndSize()
         {
             Rectangle screenArea = Screen.PrimaryScreen.WorkingArea;
             Rect corners = new Rect();
@@ -471,7 +457,7 @@ namespace ClassicVolumeMixer
                 appCount = (windowHandles.Count - 12) / 7;
             }
             GetWindowRect(handle, ref corners);
-            MoveWindow(this.handle, screenArea.Width - (160 + 110 * appCount), screenArea.Height - (corners.Bottom - corners.Top), 160 + 110 * appCount, 350, true);
+            MoveWindow(handle, screenArea.Width - (160 + 110 * appCount), screenArea.Height - (corners.Bottom - corners.Top), 160 + 110 * appCount, 350, true);
         }
 
         private static bool GetWindowHandle(IntPtr windowHandle, ArrayList windowHandles)
@@ -485,7 +471,7 @@ namespace ClassicVolumeMixer
             //WM_DEVICECHANGE = 0x0219;
             if (m.Msg == 0x0219)
             {
-                loadContextMenu();
+                LoadContextMenu();
             }
             base.WndProc(ref m);
         }
