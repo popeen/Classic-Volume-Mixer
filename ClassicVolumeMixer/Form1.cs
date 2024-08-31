@@ -49,7 +49,6 @@ namespace ClassicVolumeMixer
         private bool isVisible;
         private Options options = new Options { AdjustWidth = true, CloseClick = true, HideMixer = false };
         private readonly Icon[] icons = new Icon[7];
-        private bool showNoAudioDeviceWarning = false;
 
         public Form1()
         {
