@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using ClassicVolumeMixer.Helpers;
 using CoreAudio;
 using Microsoft.Win32;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace ClassicVolumeMixer
 {
@@ -50,6 +51,8 @@ namespace ClassicVolumeMixer
         private Options options = new Options { AdjustWidth = true, CloseClick = true, HideMixer = false };
         private readonly Icon[] icons = new Icon[7];
 
+        MMNotificationClient audioNotificationClient = new MMNotificationClient(new MMDeviceEnumerator(new Guid()));
+
         public Form1()
         {
             InitializeComponent();
@@ -75,6 +78,7 @@ namespace ClassicVolumeMixer
 
             timer.Interval = 100;  //if the Mixer takes too long to close after losing focus lower this value
             timer.Tick += Timer_Tick;
+            audioNotificationClient.DeviceStateChanged += AudioDeviceChanged;
 
             volumeChangeTimer.Interval = 100;
             volumeChangeTimer.Tick += VolumeChangeTimer_Tick;
@@ -83,6 +87,10 @@ namespace ClassicVolumeMixer
             notifyIcon.Text = "Classic Mixer";
             notifyIcon.Visible = true;
             notifyIcon.MouseClick += NotifyIcon_Click;
+
+            contextMenu.Opening += ContextMenu_Opening;
+            contextMenu.Closing += ContextMenu_Closing;
+            AudioDeviceHelper.GetAudioDevices(DataFlow.All);
             LoadContextMenu();
 
             if (File.Exists(saveFile))
@@ -92,6 +100,18 @@ namespace ClassicVolumeMixer
             else
             {
                 WriteOptions();
+            }
+        }
+
+
+        private long audioDeviceChangeDelay = 100000;
+        private long lastAudioDeviceChange = DateTime.Now.Ticks;
+        private void AudioDeviceChanged(object sender, DeviceNotificationEventArgs e)
+        {
+            if (DateTime.Now.Ticks - lastAudioDeviceChange > audioDeviceChangeDelay)
+            {
+                this.Invoke(new Action(delegate { LoadContextMenu(); }));
+                lastAudioDeviceChange = DateTime.Now.Ticks;
             }
         }
 
@@ -107,7 +127,7 @@ namespace ClassicVolumeMixer
                 notifyIcon.Icon = icons[6];
                 return;
             }
-                
+
             int volume = AudioDeviceHelper.GetVolumeLevel();
             if (AudioDeviceHelper.IsMuted())
             {
@@ -125,11 +145,7 @@ namespace ClassicVolumeMixer
 
         private void LoadContextMenu()
         {
-            contextMenu = new ContextMenuStrip();
-
-            contextMenu.Opening += ContextMenu_Opening;
-            contextMenu.Closing += ContextMenu_Closing;
-
+            contextMenu.Items.Clear();
             AddAudioDevicesToContextMenu(DataFlow.Capture);
             contextMenu.Items.Add(new ToolStripSeparator());
             AddAudioDevicesToContextMenu(DataFlow.Render);
@@ -387,6 +403,5 @@ namespace ClassicVolumeMixer
             WindowHelper.GetWindowRect(handle, ref corners);
             WindowHelper.MoveWindow(handle, screenArea.Width - (160 + 110 * appCount), screenArea.Height - (corners.Bottom - corners.Top), 160 + 110 * appCount, 350, true);
         }
-
     }
 }
