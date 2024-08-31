@@ -48,8 +48,8 @@ namespace ClassicVolumeMixer
 
         private bool isVisible;
         private Options options = new Options { AdjustWidth = true, CloseClick = true, HideMixer = false };
-        private readonly Icon[] icons = new Icon[6];
-        private bool showNoAudioDeviceWarning = true;
+        private readonly Icon[] icons = new Icon[7];
+        private bool showNoAudioDeviceWarning = false;
 
         public Form1()
         {
@@ -64,6 +64,7 @@ namespace ClassicVolumeMixer
             icons[2] = icons[3] = IconHelper.ExtractIcon(soundIconsPath, 5, shouldUseDarkIcon); // three bars
             icons[4] = IconHelper.ExtractIcon(soundIconsPath, 1, shouldUseDarkIcon); // mute
             icons[5] = IconHelper.ExtractIcon(soundIconsPath, 2, shouldUseDarkIcon); // zero bars
+            icons[6] = IconHelper.ExtractIcon(soundIconsPath, 6, shouldUseDarkIcon); // no Audio Devices
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -104,12 +105,7 @@ namespace ClassicVolumeMixer
         {
             if (!AudioDeviceHelper.IsAudioDeviceAvailable())
             {
-                if (showNoAudioDeviceWarning)
-                {
-                    showNoAudioDeviceWarning = false;
-                    MessageBox.Show("There is no audio device on the system. Classic Volume Mixer will close.", "Classic Volume Mixer", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    Application.Exit();
-                }
+                notifyIcon.Icon = icons[6];
                 return;
             }
                 
