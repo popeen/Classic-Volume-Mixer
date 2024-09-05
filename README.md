@@ -15,7 +15,7 @@ Alternatively you can download it from the releases page
 https://github.com/popeen/Classic-Volume-Mixer/releases
 
 # Troubleshooting
-If you get smartscreen error (blue box popup) this is because the file has not been signed and is still to new. You can click on "more info" and then "run anyway" to run it, this is only needed once. 
+If you get smartscreen error (blue box popup) this is because the file has not been signed and is still to new. You can click on "more info" and then "run anyway" to run it, this is only needed once. Or you can cancel the installation and install an older version for now where it has had time to verify that it is safe.
 
 -----
 
