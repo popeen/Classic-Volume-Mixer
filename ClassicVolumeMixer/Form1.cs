@@ -1,16 +1,12 @@
-﻿using System;
+﻿using ClassicVolumeMixer.Helpers;
+using CoreAudio;
+using System;
 using System.Collections;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
-using ClassicVolumeMixer.Helpers;
-using CoreAudio;
-using Microsoft.Win32;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ClassicVolumeMixer
 {
@@ -24,11 +20,13 @@ namespace ClassicVolumeMixer
     public partial class Form1 : Form
     {
         private static readonly string WinDir = Environment.GetEnvironmentVariable("SystemRoot");
+        private static readonly string programFilesX86Path = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
         private readonly string mixerPath = Path.Combine(WinDir, "Sysnative", "sndvol.exe");
         private readonly string controlPanelPath = Path.Combine(WinDir, "Sysnative", "control.exe");
         private readonly string soundPanelArgument = "mmsys.cpl";
         private readonly string soundIconsPath = Path.Combine(WinDir, "Sysnative", "SndVolSSO.dll");
         private readonly string saveFile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ClassicVolumeMixerSettings.json");
+        private readonly string updaterPath = Path.Combine(programFilesX86Path, "Classic Volume Mixer", "classicvolumemixer-updater.exe");
 
         private readonly NotifyIcon notifyIcon = new NotifyIcon(new System.ComponentModel.Container());
         private ContextMenuStrip contextMenu = new ContextMenuStrip();
@@ -39,6 +37,7 @@ namespace ClassicVolumeMixer
         private readonly ToolStripMenuItem closeClick = new ToolStripMenuItem();
         private readonly ToolStripMenuItem adjustWidth = new ToolStripMenuItem();
         private readonly ToolStripMenuItem hideMixer = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem checkForUpdate = new ToolStripMenuItem();
         private readonly ToolStripMenuItem exit = new ToolStripMenuItem();
 
         private Process process = new Process();
@@ -153,6 +152,7 @@ namespace ClassicVolumeMixer
 
             AddMenuItems();
             AddOptionsMenuItems();
+            AddUpdateMenuItems();
             AddExitMenuItem();
 
             notifyIcon.ContextMenuStrip = contextMenu;
@@ -217,6 +217,17 @@ namespace ClassicVolumeMixer
                 options.HideMixer = !options.HideMixer;
                 WriteOptions();
             };
+        }
+
+        private void AddUpdateMenuItems()
+        {
+            contextMenu.Items.AddRange(new ToolStripMenuItem[] {
+                checkForUpdate,
+            });
+            contextMenu.Items.Add(new ToolStripSeparator());
+
+            checkForUpdate.Text = "Check for updates";
+            checkForUpdate.Click += (sender, e) => StartProcess(updaterPath);
         }
 
         private void AddExitMenuItem()
