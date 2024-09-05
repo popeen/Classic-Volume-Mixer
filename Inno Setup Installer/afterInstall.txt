@@ -1,6 +1,0 @@
-OBS!
-Windows will hide Classic Volume Mixer by default.
-
-You probably want to change that, the easiest way is that you press the arrow next to your clock and then drag & drop it next to the arrow.
-
-This can be done once you finish this installation.
