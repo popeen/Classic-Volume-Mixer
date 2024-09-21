@@ -33,11 +33,30 @@ namespace ClassicVolumeMixer.Helpers
         {
             new CoreAudio.CPolicyConfigVistaClient().SetDefaultDevice(device.ID);
         }
+
         public static int GetVolumeLevel()
         {
             MMDevice defaultAudioDevice = GetDefaultAudioDevice();
             return (int)(defaultAudioDevice.AudioEndpointVolume.MasterVolumeLevelScalar * 100);
         }
+
+        public static void SetVolumeLevel(int volume)
+        {
+            MMDevice defaultAudioDevice = GetDefaultAudioDevice();
+            if (defaultAudioDevice != null)
+            {
+                float volumeLevel = Clamp(volume / 100.0f, 0.0f, 1.0f);
+                defaultAudioDevice.AudioEndpointVolume.MasterVolumeLevelScalar = volumeLevel;
+            }
+        }
+
+        private static float Clamp(float value, float min, float max)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
+        }
+
         public static bool IsMuted()
         {
             MMDevice defaultAudioDevice = GetDefaultAudioDevice();

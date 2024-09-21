@@ -5,6 +5,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
 
@@ -19,6 +20,7 @@ namespace ClassicVolumeMixer
 
     public partial class Form1 : Form
     {
+
         private static readonly string WinDir = Environment.GetEnvironmentVariable("SystemRoot");
         private static readonly string programFilesX86Path = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
         private readonly string mixerPath = Path.Combine(WinDir, "Sysnative", "sndvol.exe");
@@ -52,10 +54,91 @@ namespace ClassicVolumeMixer
 
         MMNotificationClient audioNotificationClient = new MMNotificationClient(new MMDeviceEnumerator(new Guid()));
 
+        private LowLevelMouseProc _mouseProc;
+        private IntPtr hookID = IntPtr.Zero;
+        private const int WH_MOUSE_LL = 14;
+        private const int WM_MOUSEWHEEL = 0x020A;
+        private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
         public Form1()
         {
             InitializeComponent();
+            //TODO, this currently causes the ram usage to just go up over time due to the hook not being removed, need to fix this or cut the scrolling feature
+            _mouseProc = new LowLevelMouseProc(HookCallback);
+            hookID = SetHook(_mouseProc);
         }
+
+        ~Form1()
+        {
+            UnhookWindowsHookEx(hookID);
+        }
+
+        private IntPtr SetHook(LowLevelMouseProc proc)
+        {
+            using (Process curProcess = Process.GetCurrentProcess())
+            using (ProcessModule curModule = curProcess.MainModule)
+            {
+                return SetWindowsHookEx(WH_MOUSE_LL, proc, GetModuleHandle(curModule.ModuleName), 0);
+            }
+        }
+
+        private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && wParam == (IntPtr)WM_MOUSEWHEEL)
+            {
+                MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+                int delta = (short)((hookStruct.mouseData >> 16) & 0xffff);
+                HandleMouseWheel(delta);
+            }
+            return CallNextHookEx(hookID, nCode, wParam, lParam);
+        }
+
+        private void HandleMouseWheel(int delta)
+        {
+            IntPtr foregroundWindow = WindowHelper.GetForegroundWindow();
+            if (foregroundWindow == handle)
+            {
+                if (delta > 0)
+                {
+                    AudioDeviceHelper.SetVolumeLevel(AudioDeviceHelper.GetVolumeLevel() + 5);
+                }
+                else if (delta < 0)
+                {
+                    AudioDeviceHelper.SetVolumeLevel(AudioDeviceHelper.GetVolumeLevel() - 5);
+                }
+                ChangeTrayIconVolume();
+            }
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSLLHOOKSTRUCT
+        {
+            public POINT pt;
+            public uint mouseData;
+            public uint flags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int x;
+            public int y;
+        }
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
 
         private void SetIcons()
         {
