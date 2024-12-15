@@ -1,3 +1,8 @@
+[![downloads-shield]][cvm-link]
+[![issues-shield]](issues)
+[![license-shield]](LICENSE.md)
+[![Buy me a coffee][buymeacoffee-shield]][buymeacoffee-link]
+
 # What is Classic Volume Mixer
 In Windows 11 the old volume mixer was "removed" and instead a new mixer was added to the settings app.
 
@@ -21,3 +26,13 @@ If you get smartscreen error (blue box popup) this is because the file has not b
 
 ![Screenshot](size.png)
 ![Menu](menu.png)
+
+[downloads-shield]: https://img.shields.io/github/downloads/popeen/classic-volume-mixer/total
+[cvm-link]: https://github.com/popeen/classic-volume-mixer/releases
+
+[issues-shield]: https://img.shields.io/github/issues-raw/popeen/classic-volume-mixer.svg
+
+[license-shield]: https://img.shields.io/github/license/popeen/classic-volume-mixer.svg
+
+[buymeacoffee-shield]: https://img.shields.io/badge/donation-Buy%20me%20a%20coffee-orange
+[buymeacoffee-link]: https://www.buymeacoffee.com/popeen
